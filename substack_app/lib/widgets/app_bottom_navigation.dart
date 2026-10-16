@@ -1,24 +1,113 @@
+
 import 'package:flutter/material.dart';
+
+import '../core/theme/app_colors.dart';
 
 class AppBottomNavigation extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
-  const AppBottomNavigation({super.key, required this.currentIndex, required this.onTap});
 
-  static const items = [
-    (Icons.home_outlined, 'Beranda'),
-    (Icons.menu_book_outlined, 'Bacaan'),
-    (Icons.podcasts_outlined, 'Podcast'),
-    (Icons.chat_bubble_outline, 'Obrolan'),
-    (Icons.notifications_none, 'Aktivitas'),
+  const AppBottomNavigation({
+    super.key,
+    required this.currentIndex,
+    required this.onTap,
+  });
+
+  static const List<_NavItem> items = [
+    _NavItem(
+      icon: Icons.home_outlined,
+      activeIcon: Icons.home,
+      label: 'Home',
+    ),
+    _NavItem(
+      icon: Icons.menu_book_outlined,
+      activeIcon: Icons.menu_book,
+      label: 'Read',
+    ),
+    _NavItem(
+      icon: Icons.podcasts_outlined,
+      activeIcon: Icons.podcasts,
+      label: 'Podcasts',
+    ),
+    _NavItem(
+      icon: Icons.chat_bubble_outline,
+      activeIcon: Icons.chat_bubble,
+      label: 'Chat',
+    ),
+    _NavItem(
+      icon: Icons.notifications_none,
+      activeIcon: Icons.notifications,
+      label: 'Activity',
+    ),
   ];
 
   @override
-  Widget build(BuildContext context) => NavigationBar(
-    selectedIndex: currentIndex,
-    onDestinationSelected: onTap,
-    destinations: items.map((item) => NavigationDestination(
-      icon: Icon(item.$1), label: item.$2,
-    )).toList(),
-  );
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.background,
+        border: Border(
+          top: BorderSide(
+            color: AppColors.divider,
+            width: 0.7,
+          ),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 56,
+          child: Row(
+            children: List.generate(items.length, (index) {
+              final item = items[index];
+              final isSelected = currentIndex == index;
+
+              return Expanded(
+                child: InkWell(
+                  onTap: () => onTap(index),
+                  splashColor: Colors.transparent,
+                  highlightColor: Colors.transparent,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        isSelected ? item.activeIcon : item.icon,
+                        size: 23,
+                        color: AppColors.textPrimary,
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        item.label,
+                        maxLines: 1,
+                        style: TextStyle(
+                          fontSize: 10,
+                          height: 1.2,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NavItem {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+
+  const _NavItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+  });
 }
