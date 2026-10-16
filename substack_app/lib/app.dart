@@ -4,11 +4,15 @@ import 'core/routing/app_router.dart';
 
 class SubstackApp extends StatelessWidget {
   const SubstackApp({super.key});
+
   @override
-  Widget build(BuildContext context) => MaterialApp(
-    title: 'Substack Clone',
-    theme: AppTheme.light,
-    initialRoute: '/',
-    onGenerateRoute: AppRouter.onGenerateRoute,
-  );
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Substack Clone',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      initialRoute: '/',
+      onGenerateRoute: AppRouter.onGenerateRoute,
+    );
+  }
 }
