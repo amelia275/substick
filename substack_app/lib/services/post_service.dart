@@ -1,13 +1,24 @@
 import '../core/network/api_client.dart';
-import '../models/post.dart';
 
 class PostService {
-  final ApiClient api;
-  PostService(this.api);
+  final ApiClient _apiClient;
 
-  Future<List<Post>> getPosts({String type = 'note'}) async {
-    final result = await api.get('/posts?type=$type') as Map<String, dynamic>;
-    final items = result['data'] as List<dynamic>;
-    return items.map((item) => Post.fromJson(item as Map<String, dynamic>)).toList();
+  PostService({ApiClient? apiClient})
+      : _apiClient = apiClient ?? ApiClient();
+
+  Future<List<dynamic>> fetchPosts() async {
+    final result = await _apiClient.get('/posts');
+
+    if (result is! Map<String, dynamic>) {
+      throw Exception('Format respons API tidak sesuai');
+    }
+
+    final data = result['data'];
+
+    if (data is! List) {
+      throw Exception('Data post tidak ditemukan');
+    }
+
+    return data;
   }
 }
