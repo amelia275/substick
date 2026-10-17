@@ -365,11 +365,11 @@ class _PeopleToFollow extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
                     'People to follow',
                     style: TextStyle(
@@ -379,7 +379,7 @@ class _PeopleToFollow extends StatelessWidget {
                     ),
                   ),
                 ),
-                const Text(
+                Text(
                   'See all',
                   style: TextStyle(
                     color: AppColors.primary,
