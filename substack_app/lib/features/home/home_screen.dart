@@ -1,12 +1,34 @@
-
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../models/post.dart';
+import '../../services/post_service.dart';
 import '../../widgets/app_bottom_navigation.dart';
 import '../../widgets/app_top_bar.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final PostService _postService = PostService();
+
+  late Future<List<Post>> _postsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _postsFuture = _postService.fetchPosts();
+  }
+
+  void _reloadPosts() {
+    setState(() {
+      _postsFuture = _postService.fetchPosts();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,62 +38,95 @@ class HomeScreen extends StatelessWidget {
         onSearchTap: () {},
         onProfileTap: () {},
       ),
-      body: ListView(
-        padding: EdgeInsets.zero,
-        children: const [
-          // Quote berbentuk gambar
-          _NoteItem(
-            username: 'wordsloftupsaid',
-            time: '2mo',
-            imageUrl: 'https://placehold.co/800x450/ffffff/2b2823.png?text=What+words+are+better+than+I+love+you%3F',
-            likes: '13.5k',
-            comments: '48',
-            restacks: '4.3k',
-          ),
+      body: FutureBuilder<List<Post>>(
+        future: _postsFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(
+                color: AppColors.primary,
+              ),
+            );
+          }
 
-          // Note berupa teks panjang
-          _NoteItem(
-            username: 'nanash',
-            time: '1d',
-            content:
-                'baru sadar kehilangan spark tuh ternyata ga selalu '
-                'kelihatan kayak sedih, kadang kita masih ketawa, '
-                'masih kerja, masih ngobrol, masih main, masih jadi '
-                'diri sendiri, tapi rasanya ada bagian dari diri kita '
-                'yang pelan-pelan mati, and somehow, losing your spark '
-                'slowly is scarier than being sad all at once.',
-            likes: '1k',
-            comments: '11',
-            restacks: '275',
-          ),
+          if (snapshot.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.wifi_off_outlined,
+                      size: 42,
+                      color: AppColors.iconSecondary,
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Belum bisa memuat postingan.',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${snapshot.error}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _reloadPosts,
+                      child: const Text('Coba lagi'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
 
-          // Rekomendasi akun di tengah feed
-          _PeopleToFollow(),
+          final posts = snapshot.data ?? <Post>[];
 
-          // Note dengan teks pengantar dan kartu quote
-          _NoteItem(
-            username: 'Arwa',
-            time: '3w',
-            content: 'ayo kita cari tahu bareng',
-            quote: 'Saya ingin pendidikan membuat saya lebih mampu '
-                'memahami manusia tanpa buru-buru merendahkannya.',
-            publication: 'Unheard Things in Closed Rooms',
-            likes: '9.9k',
-            comments: '2',
-            restacks: '1.6k',
-          ),
+          if (posts.isEmpty) {
+            return RefreshIndicator(
+              color: AppColors.primary,
+              onRefresh: () async => _reloadPosts(),
+              child: ListView(
+                children: const [
+                  SizedBox(height: 180),
+                  Center(child: Text('Belum ada postingan.')),
+                ],
+              ),
+            );
+          }
 
-          // Contoh Restack
-          _NoteItem(
-            username: 'claire',
-            time: '3w',
-            content: 'letter for you',
-            restackedBy: 'Arwa',
-            likes: '284',
-            comments: '12',
-            restacks: '35',
-          ),
-        ],
+          return RefreshIndicator(
+            color: AppColors.primary,
+            onRefresh: () async => _reloadPosts(),
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                for (final post in posts)
+                  _NoteItem(
+                    username: post.username ?? post.authorName ?? 'Pengguna',
+                    time: post.publishedAt == null
+                        ? ''
+                        : _formatPostTime(post.publishedAt!),
+                    content: post.content.isEmpty ? null : post.content,
+                    imageUrl: post.imageUrl,
+                    likes: '${post.likesCount}',
+                    comments: '${post.commentsCount}',
+                    restacks: '${post.restacksCount}',
+                  ),
+                const _PeopleToFollow(),
+              ],
+            ),
+          );
+        },
       ),
       floatingActionButton: SizedBox(
         width: 54,
@@ -94,6 +149,17 @@ class HomeScreen extends StatelessWidget {
         },
       ),
     );
+  }
+
+  String _formatPostTime(DateTime date) {
+    final difference = DateTime.now().difference(date.toLocal());
+
+    if (difference.inMinutes < 1) return 'Baru saja';
+    if (difference.inHours < 1) return '${difference.inMinutes}m';
+    if (difference.inDays < 1) return '${difference.inHours}h';
+    if (difference.inDays < 7) return '${difference.inDays}d';
+
+    return '${date.day}/${date.month}/${date.year}';
   }
 }
 
