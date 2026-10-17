@@ -74,17 +74,17 @@ class HomeScreen extends StatelessWidget {
         ],
       ),
       floatingActionButton: SizedBox(
-        width: 64,
-        height: 64,
+        width: 54,
+        height: 54,
         child: FloatingActionButton(
           onPressed: () {},
           backgroundColor: const Color(0xFFFF6719),
           foregroundColor: Colors.white,
           elevation: 3,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(18),
           ),
-          child: const Icon(Icons.add, size: 29),
+          child: const Icon(Icons.add, size: 25),
         ),
       ),
       bottomNavigationBar: AppBottomNavigation(
@@ -150,9 +150,9 @@ class _NoteItem extends StatelessWidget {
           Row(
             children: [
               const CircleAvatar(
-                radius: 20,
+                radius: 18,
                 backgroundColor: Color(0xFFEAEAEA),
-                child: Icon(Icons.person, color: Colors.grey),
+                child: Icon(Icons.person, size: 20, color: Colors.grey),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -197,9 +197,9 @@ class _NoteItem extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.more_horiz, color: AppColors.iconSecondary),
-              const SizedBox(width: 12),
-              const Icon(Icons.close, color: AppColors.iconSecondary),
+              const Icon(Icons.more_horiz, size: 12, color: AppColors.iconSecondary),
+              const SizedBox(width: 8),
+              const Icon(Icons.close, size: 19, color: AppColors.iconSecondary),
             ],
           ),
           if (content != null) ...[
@@ -207,7 +207,7 @@ class _NoteItem extends StatelessWidget {
             Text(
               content!,
               style: const TextStyle(
-                fontSize: 16,
+                fontSize: 15,
                 height: 1.4,
                 color: AppColors.textPrimary,
               ),
@@ -234,40 +234,66 @@ class _NoteItem extends StatelessWidget {
             const SizedBox(height: 12),
             Container(
               width: double.infinity,
-              constraints: const BoxConstraints(minHeight: 250),
-              padding: const EdgeInsets.all(24),
+              constraints: const BoxConstraints(minHeight: 220),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: const Color(0xFF79300E),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Stack(
                 children: [
-                  const Icon(
-                    Icons.format_quote,
-                    color: Colors.white,
-                    size: 32,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    quote!,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      height: 1.4,
-                      fontFamily: 'serif',
-                      color: Colors.white,
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 38, right: 4),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(
+                          Icons.format_quote,
+                          color: Colors.white,
+                          size: 26,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          quote!,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            height: 1.4,
+                            fontFamily: 'serif',
+                            color: Colors.white,
+                          ),
+                        ),
+                        if (publication != null) ...[
+                          const SizedBox(height: 24),
+                          Text(
+                            publication!,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              height: 1.3,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  if (publication != null) ...[
-                    Text(
-                      publication!,
-                      style: const TextStyle(
-                        fontSize: 11,
+
+                  Positioned(
+                    right: 0,
+                    bottom: 38,
+                    child: IconButton(
+                      onPressed: () {},
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
+                      ),
+                      icon: const Icon(
+                        Icons.bookmark_border,
                         color: Colors.white,
+                        size: 25,
                       ),
                     ),
-                  ],
+                  ),
                 ],
               ),
             ),
@@ -319,11 +345,11 @@ class _NoteAction extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.only(right: 20, top: 5, bottom: 5),
+        padding: const EdgeInsets.only(right: 16, top: 5, bottom: 5),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 20, color: AppColors.iconSecondary),
+            Icon(icon, size: 18, color: AppColors.iconSecondary),
             if (label != null) ...[
               const SizedBox(width: 7),
               Text(
@@ -391,7 +417,7 @@ class _PeopleToFollow extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           SizedBox(
-            height: 185,
+            height: 175,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -401,7 +427,7 @@ class _PeopleToFollow extends StatelessWidget {
                 final person = people[index];
 
                 return Container(
-                  width: 155,
+                  width: 150,
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -411,11 +437,11 @@ class _PeopleToFollow extends StatelessWidget {
                   child: Column(
                     children: [
                       const CircleAvatar(
-                        radius: 32,
+                        radius: 28,
                         backgroundColor: Color(0xFFEAEAEA),
                         child: Icon(
                           Icons.person,
-                          size: 34,
+                          size: 30,
                           color: AppColors.iconSecondary,
                         ),
                       ),
@@ -425,7 +451,7 @@ class _PeopleToFollow extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          fontSize: 11,
+                          fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textPrimary,
                         ),
@@ -436,7 +462,7 @@ class _PeopleToFollow extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          fontSize: 9,
+                          fontSize: 10,
                           color: AppColors.textSecondary,
                         ),
                       ),
@@ -457,7 +483,7 @@ class _PeopleToFollow extends StatelessWidget {
                           ),
                           child: const Text(
                             'Follow',
-                            style: TextStyle(fontSize: 10),
+                            style: TextStyle(fontSize: 12),
                           ),
                         ),
                       ),
