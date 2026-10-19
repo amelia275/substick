@@ -16,7 +16,8 @@ class SubstackSeeder extends Seeder
 {
     public function run(): void
     {
-        $user = User::firstOrCreate(
+        // User utama
+        $amelia = User::firstOrCreate(
             ['email' => 'amelia@example.com'],
             [
                 'name' => 'Amelia Masayu',
@@ -27,69 +28,177 @@ class SubstackSeeder extends Seeder
             ]
         );
 
-        $publication = Publication::firstOrCreate(
+        // User tambahan
+        $usersData = [
+            [
+                'email' => 'arwa@example.com',
+                'name' => 'Arwa',
+                'username' => 'arwa',
+                'bio' => 'Writing about life and people.',
+                'publication' => 'Unheard Things in Closed Rooms',
+                'slug' => 'unheard-things',
+            ],
+            [
+                'email' => 'nanash@example.com',
+                'name' => 'Nanash',
+                'username' => 'nanash',
+                'bio' => 'Catatan kecil tentang kehidupan.',
+                'publication' => 'Little Things',
+                'slug' => 'little-things',
+            ],
+            [
+                'email' => 'claire@example.com',
+                'name' => 'Claire',
+                'username' => 'claire',
+                'bio' => 'Letters, thoughts, and stories.',
+                'publication' => 'Letters for You',
+                'slug' => 'letters-for-you',
+            ],
+        ];
+
+        $users = [];
+
+        foreach ($usersData as $data) {
+            $user = User::firstOrCreate(
+                ['email' => $data['email']],
+                [
+                    'name' => $data['name'],
+                    'username' => $data['username'],
+                    'password' => Hash::make('password123'),
+                    'bio' => $data['bio'],
+                    'avatar_url' => null,
+                ]
+            );
+
+            $publication = Publication::firstOrCreate(
+                ['slug' => $data['slug']],
+                [
+                    'owner_id' => $user->id,
+                    'name' => $data['publication'],
+                    'description' => $data['bio'],
+                    'logo_url' => null,
+                ]
+            );
+
+            $user->joinedPublications()->syncWithoutDetaching([
+                $publication->id,
+            ]);
+
+            $users[$data['username']] = [
+                'user' => $user,
+                'publication' => $publication,
+            ];
+        }
+
+        // Publication Amelia
+        $ameliaPublication = Publication::firstOrCreate(
             ['slug' => 'ruang-amelia'],
             [
-                'owner_id' => $user->id,
+                'owner_id' => $amelia->id,
                 'name' => 'Ruang Amelia',
                 'description' => 'Tempat berbagi cerita dan pemikiran.',
                 'logo_url' => null,
             ]
         );
 
-        $post = Post::firstOrCreate(
+        $amelia->joinedPublications()->syncWithoutDetaching([
+            $ameliaPublication->id,
+        ]);
+
+        // Post artikel Amelia yang sudah ada
+        $mainPost = Post::firstOrCreate(
             [
-                'user_id' => $user->id,
+                'user_id' => $amelia->id,
                 'title' => 'Belajar Teknologi dari Hal Sederhana',
             ],
             [
-                'publication_id' => $publication->id,
+                'publication_id' => $ameliaPublication->id,
                 'type' => 'article',
                 'content' => 'Teknologi bisa dipelajari sedikit demi sedikit. Mulailah dari rasa ingin tahu, lalu kembangkan pemahaman melalui praktik.',
                 'status' => 'published',
-                'published_at' => now(),
+                'published_at' => now()->subDays(2),
             ]
         );
 
-        $comment = Comment::firstOrCreate(
+        // Post tambahan: teks, quote, dan artikel
+        $postsData = [
             [
-                'post_id' => $post->id,
-                'user_id' => $user->id,
+                'author' => 'nanash',
+                'title' => 'Tentang Kehilangan Spark',
+                'type' => 'note',
+                'content' => 'Kadang kita masih tertawa, bekerja, dan ngobrol seperti biasa. Namun, ada bagian dari diri kita yang perlahan terasa hilang. Mungkin kita hanya perlu waktu untuk menemukannya lagi.',
+                'published_at' => now()->subHours(5),
+            ],
+            [
+                'author' => 'arwa',
+                'title' => 'Memahami Manusia',
+                'type' => 'quote',
+                'content' => 'Saya ingin pendidikan membuat saya lebih mampu memahami manusia tanpa buru-buru merendahkannya.',
+                'published_at' => now()->subHours(8),
+            ],
+            [
+                'author' => 'claire',
+                'title' => 'Letter for You',
+                'type' => 'note',
+                'content' => 'Untuk kamu yang sedang berusaha melewati hari-hari sulit: tidak apa-apa kalau hari ini kamu hanya mampu melakukan sedikit hal. Itu tetap berarti.',
+                'published_at' => now()->subDay(),
+            ],
+            [
+                'author' => 'arwa',
+                'title' => 'Belajar Mendengarkan',
+                'type' => 'article',
+                'content' => 'Mendengarkan bukan sekadar menunggu giliran berbicara. Ada banyak hal yang baru bisa kita pahami ketika kita benar-benar memberi ruang kepada orang lain.',
+                'published_at' => now()->subDays(3),
+            ],
+        ];
+
+        $createdPosts = [];
+
+        foreach ($postsData as $data) {
+            $author = $users[$data['author']];
+
+            $post = Post::firstOrCreate(
+                [
+                    'user_id' => $author['user']->id,
+                    'title' => $data['title'],
+                ],
+                [
+                    'publication_id' => $author['publication']->id,
+                    'type' => $data['type'],
+                    'content' => $data['content'],
+                    'status' => 'published',
+                    'published_at' => $data['published_at'],
+                ]
+            );
+
+            $createdPosts[$data['title']] = $post;
+        }
+
+        // Contoh komentar
+        Comment::firstOrCreate(
+            [
+                'post_id' => $mainPost->id,
+                'user_id' => $users['arwa']['user']->id,
                 'content' => 'Semangat belajar dan terus mencoba hal baru!',
             ],
             ['parent_comment_id' => null]
         );
 
+        // Contoh interaksi pada post
         PostLike::firstOrCreate([
-            'user_id' => $user->id,
-            'post_id' => $post->id,
-        ]);
-
-        PostRestack::firstOrCreate([
-            'user_id' => $user->id,
-            'post_id' => $post->id,
+            'user_id' => $users['nanash']['user']->id,
+            'post_id' => $mainPost->id,
         ]);
 
         Bookmark::firstOrCreate([
-            'user_id' => $user->id,
-            'post_id' => $post->id,
+            'user_id' => $amelia->id,
+            'post_id' => $createdPosts['Memahami Manusia']->id,
         ]);
 
-        $user->joinedPublications()->syncWithoutDetaching([
-            $publication->id,
-        ]);
-
-        \Illuminate\Support\Facades\DB::table('notifications')->insertOrIgnore([
-            [
-                'recipient_id' => $user->id,
-                'actor_id' => $user->id,
-                'post_id' => $post->id,
-                'comment_id' => $comment->id,
-                'type' => 'comment',
-                'message' => 'Ada komentar baru pada postinganmu.',
-                'is_read' => false,
-                'created_at' => now(),
-            ],
+        // Amelia merestack post milik Arwa
+        PostRestack::firstOrCreate([
+            'user_id' => $amelia->id,
+            'post_id' => $createdPosts['Memahami Manusia']->id,
         ]);
     }
 }

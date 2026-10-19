@@ -10,7 +10,12 @@ class PostController extends Controller
 {
     public function index(): JsonResponse
     {
-        $posts = Post::with(['user', 'publication'])
+        $posts = Post::with([
+            'user',
+            'publication',
+            'restacks.user',
+        ])
+            ->withCount(['likes', 'comments', 'restacks'])
             ->where('status', 'published')
             ->orderByDesc('published_at')
             ->orderByDesc('created_at')
@@ -25,7 +30,9 @@ class PostController extends Controller
             'user',
             'publication',
             'comments.user',
+            'restacks.user',
         ])
+            ->withCount(['likes', 'comments', 'restacks'])
             ->where('status', 'published')
             ->findOrFail($id);
 

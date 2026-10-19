@@ -1,13 +1,35 @@
-
 import 'package:flutter/material.dart';
-
+import '../../core/routing/app_navigation.dart';
 import '../../core/theme/app_colors.dart';
+import '../../models/post.dart';
+import '../../services/post_service.dart';
 import '../../widgets/app_bottom_navigation.dart';
 import '../../widgets/app_top_bar.dart';
 import '../notes_detail/notes_detail_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final PostService _postService = PostService();
+
+  late Future<List<Post>> _postsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _postsFuture = _postService.fetchPosts();
+  }
+
+  void _reloadPosts() {
+    setState(() {
+      _postsFuture = _postService.fetchPosts();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -107,11 +129,20 @@ class HomeScreen extends StatelessWidget {
       ),
       bottomNavigationBar: AppBottomNavigation(
         currentIndex: 0,
-        onTap: (index) {
-          // TODO: Hubungkan dengan AppRouter.
-        },
+        onTap: (index) => AppNavigation.onTabSelected(context, index),
       ),
     );
+  }
+
+  String _formatPostTime(DateTime date) {
+    final difference = DateTime.now().difference(date.toLocal());
+
+    if (difference.inMinutes < 1) return 'Baru saja';
+    if (difference.inHours < 1) return '${difference.inMinutes}m';
+    if (difference.inDays < 1) return '${difference.inHours}h';
+    if (difference.inDays < 7) return '${difference.inDays}d';
+
+    return '${date.day}/${date.month}/${date.year}';
   }
 }
 
