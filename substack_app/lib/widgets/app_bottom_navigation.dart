@@ -1,6 +1,5 @@
-
 import 'package:flutter/material.dart';
-
+import 'substack_nav_icon.dart';
 import '../core/theme/app_colors.dart';
 
 class AppBottomNavigation extends StatelessWidget {
@@ -70,10 +69,10 @@ class AppBottomNavigation extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        isSelected ? item.activeIcon : item.icon,
-                        size: 23,
-                        color: AppColors.textPrimary,
+                      SubstackNavIcon(
+                        index: index,
+                        active: isSelected,
+                        size: 28,
                       ),
                       const SizedBox(height: 3),
                       Text(

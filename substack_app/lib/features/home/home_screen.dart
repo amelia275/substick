@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import '../../core/routing/app_navigation.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/post.dart';
 import '../../services/post_service.dart';
@@ -110,19 +110,41 @@ class _HomeScreenState extends State<HomeScreen> {
             child: ListView(
               padding: EdgeInsets.zero,
               children: [
-                for (final post in posts)
+                for (int i = 0; i < posts.length; i++) ...[
+                  if (i == 2) const _PeopleToFollow(),
+
                   _NoteItem(
-                    username: post.username ?? post.authorName ?? 'Pengguna',
-                    time: post.publishedAt == null
+                    username: posts[i].username ??
+                        posts[i].authorName ??
+                        'Pengguna',
+                    time: posts[i].publishedAt == null
                         ? ''
-                        : _formatPostTime(post.publishedAt!),
-                    content: post.content.isEmpty ? null : post.content,
-                    imageUrl: post.imageUrl,
-                    likes: '${post.likesCount}',
-                    comments: '${post.commentsCount}',
-                    restacks: '${post.restacksCount}',
+                        : _formatPostTime(posts[i].publishedAt!),
+
+                    content: posts[i].type == 'quote'
+                        ? null
+                        : (posts[i].content.isEmpty
+                            ? null
+                            : posts[i].content),
+
+                    quote: posts[i].type == 'quote'
+                        ? posts[i].content
+                        : null,
+
+                    publication: posts[i].type == 'quote'
+                        ? posts[i].publicationName
+                        : null,
+
+                    imageUrl: posts[i].imageUrl,
+                    restackedBy: posts[i].restackedBy,
+
+                    likes: '${posts[i].likesCount}',
+                    comments: '${posts[i].commentsCount}',
+                    restacks: '${posts[i].restacksCount}',
                   ),
-                const _PeopleToFollow(),
+                ],
+
+                if (posts.length <= 2) const _PeopleToFollow(),
               ],
             ),
           );
@@ -144,9 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       bottomNavigationBar: AppBottomNavigation(
         currentIndex: 0,
-        onTap: (index) {
-          // TODO: Hubungkan dengan AppRouter.
-        },
+        onTap: (index) => AppNavigation.onTabSelected(context, index),
       ),
     );
   }
