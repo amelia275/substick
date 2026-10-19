@@ -10,11 +10,7 @@ const _name = 'Kanalika';
 const _username = '@heynana';
 const _bio = 'better to speak';
 const _linkCount = 1;
-const _subscriptions = [
-  'Jeju\'s corner',
-  'The Greatest Note',
-  'The Substack Post'
-];
+const _subscriptions = ['The Greatest Note', 'The Substack Post'];
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -583,6 +579,14 @@ class _ActionBar extends StatelessWidget {
   }
 }
 
+String _fmt(int n) {
+  if (n >= 1000) {
+    final v = (n / 1000).toStringAsFixed(1);
+    return '${v.endsWith('.0') ? v.substring(0, v.length - 2) : v}k';
+  }
+  return '$n';
+}
+
 class _Action extends StatelessWidget {
   const _Action({required this.icon, required this.count, this.active = false});
 
@@ -598,68 +602,162 @@ class _Action extends StatelessWidget {
         Icon(icon, color: color),
         if (count > 0) ...[
           const SizedBox(width: 6),
-          Text('$count', style: TextStyle(fontSize: 16, color: color)),
+          Text(_fmt(count), style: TextStyle(fontSize: 16, color: color)),
         ],
       ],
     );
   }
 }
 
+// Data dummy, nanti diganti data dari API
+const _likedPosts = [
+  _ActivityItem(
+    type: _ActivityType.note,
+    author: 'Kino',
+    time: '4d',
+    text: 'Bacaan hari ini, saya rekomendasikan untuk teman-teman.',
+    pub: 'AKSARA M',
+    title: 'Paksa Iblis Turun Dari Kursi',
+    subtitle: 'Apa yang anda pikirkan perihal menafsir lirik lagu?',
+    snippet:
+        'Tak saya sangka, ada secarik lirik lagu yang menyita waktu saya, hanya untuk berpikir sejenak...',
+    cardColor: Color(0xFF6B4A38),
+    likes: 2300,
+    restacks: 660,
+    liked: true,
+  ),
+  _ActivityItem(
+    type: _ActivityType.note,
+    author: 'isaya',
+    time: '3w',
+    text: 'Menulis itu tidak perlu sempurna.\n\nTulis saja dulu.',
+    likes: 22000,
+    comments: 215,
+    restacks: 2900,
+    liked: true,
+  ),
+  _ActivityItem(
+    type: _ActivityType.note,
+    author: 'Audrey Z',
+    time: '1w',
+    text: 'Terkadang, tulisan yang jujur lebih berharga daripada yang rapi.',
+    likes: 2200,
+    comments: 22,
+    restacks: 348,
+    liked: true,
+  ),
+  _ActivityItem(
+    type: _ActivityType.note,
+    author: 'Auryn Lenggana',
+    time: '1mo',
+    pub: 'AURRRYYYY',
+    title: 'Catatan dari Pinggir Kota',
+    subtitle: 'Cerita kecil tentang hal-hal yang sering terlewat.',
+    snippet: 'Mari Bercerita.',
+    cardColor: Color(0xFF244338),
+    likes: 2600,
+    restacks: 925,
+    liked: true,
+  ),
+];
+
 class _LikesTab extends StatelessWidget {
   const _LikesTab();
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Row(
-          children: const [
-            Icon(Icons.favorite, size: 20, color: _greyText),
-            SizedBox(width: 10),
-            Text('$_name liked',
-                style: TextStyle(fontSize: 16, color: _greyText)),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const CircleAvatar(
-              radius: 20,
-              backgroundColor: _grey,
-              child: Icon(Icons.person, color: _greyText),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text('penulis_a',
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-                  SizedBox(height: 2),
-                  Row(
-                    children: [
-                      Text('3d', style: TextStyle(color: _greyText)),
-                      Text('  •  ', style: TextStyle(color: _greyText)),
-                      Text('Subscribe', style: TextStyle(color: _orange)),
-                    ],
-                  ),
-                  SizedBox(height: 8),
-                  Text('Judul artikel contoh',
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-                  SizedBox(height: 4),
-                  Text('Cuplikan isi artikel yang disukai muncul di sini.',
-                      style: TextStyle(fontSize: 16)),
-                ],
+    return ListView.separated(
+      itemCount: _likedPosts.length,
+      separatorBuilder: (_, __) => const Divider(
+          height: 1, indent: 16, endIndent: 16, color: Color(0xFFE0E0E0)),
+      itemBuilder: (_, i) => _LikedPost(item: _likedPosts[i]),
+    );
+  }
+}
+
+class _LikedPost extends StatelessWidget {
+  const _LikedPost({required this.item});
+
+  final _ActivityItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Baris "... liked"
+          Row(
+            children: [
+              const Icon(Icons.favorite, size: 20, color: _greyText),
+              const SizedBox(width: 10),
+              Text('$_name liked',
+                  style: const TextStyle(fontSize: 16, color: _greyText)),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const CircleAvatar(
+                radius: 24,
+                backgroundColor: _grey,
+                child: Icon(Icons.person, color: _greyText),
               ),
-            ),
-            const Icon(Icons.more_horiz, color: _greyText),
-          ],
-        ),
-      ],
+              const SizedBox(width: 12),
+              // Semua konten menjorok sejajar dengan nama
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(item.author,
+                                  style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700)),
+                              Row(
+                                children: [
+                                  Text(item.time,
+                                      style: const TextStyle(color: _greyText)),
+                                  const Text('  •  ',
+                                      style: TextStyle(color: _greyText)),
+                                  const Text('Subscribe',
+                                      style: TextStyle(color: _orange)),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.more_horiz, color: _greyText),
+                        const SizedBox(width: 12),
+                        const Icon(Icons.close, color: _greyText),
+                      ],
+                    ),
+                    if (item.text != null) ...[
+                      const SizedBox(height: 8),
+                      Text(item.text!,
+                          style: const TextStyle(fontSize: 18, height: 1.4)),
+                    ],
+                    if (item.title != null) ...[
+                      const SizedBox(height: 12),
+                      _ArticleCard(item: item),
+                    ],
+                    const SizedBox(height: 12),
+                    _ActionBar(item: item),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
