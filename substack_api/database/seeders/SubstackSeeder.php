@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Bookmark;
 use App\Models\Comment;
+use App\Models\Notification;
 use App\Models\Post;
 use App\Models\PostLike;
 use App\Models\PostRestack;
@@ -175,7 +176,7 @@ class SubstackSeeder extends Seeder
         }
 
         // Contoh komentar
-        Comment::firstOrCreate(
+        $comment = Comment::firstOrCreate(
             [
                 'post_id' => $mainPost->id,
                 'user_id' => $users['arwa']['user']->id,
@@ -200,5 +201,62 @@ class SubstackSeeder extends Seeder
             'user_id' => $amelia->id,
             'post_id' => $createdPosts['Memahami Manusia']->id,
         ]);
+
+        // Contoh notifikasi untuk halaman Activity
+        Notification::firstOrCreate(
+            [
+                'recipient_id' => $amelia->id,
+                'actor_id' => $users['nanash']['user']->id,
+                'post_id' => $mainPost->id,
+                'type' => 'like',
+            ],
+            [
+                'message' => 'liked your note',
+                'is_read' => false,
+                'created_at' => now()->subDays(30),
+            ]
+        );
+
+        Notification::firstOrCreate(
+            [
+                'recipient_id' => $amelia->id,
+                'actor_id' => $users['arwa']['user']->id,
+                'post_id' => $createdPosts['Memahami Manusia']->id,
+                'type' => 'restack',
+            ],
+            [
+                'message' => 'liked your restack',
+                'is_read' => false,
+                'created_at' => now()->subDays(30),
+            ]
+        );
+
+        Notification::firstOrCreate(
+            [
+                'recipient_id' => $amelia->id,
+                'actor_id' => $users['claire']['user']->id,
+                'type' => 'follow',
+            ],
+            [
+                'message' => 'followed you',
+                'is_read' => false,
+                'created_at' => now()->subDays(60),
+            ]
+        );
+
+        Notification::firstOrCreate(
+            [
+                'recipient_id' => $amelia->id,
+                'actor_id' => $users['arwa']['user']->id,
+                'post_id' => $mainPost->id,
+                'comment_id' => $comment->id,
+                'type' => 'comment',
+            ],
+            [
+                'message' => 'replied to your note',
+                'is_read' => false,
+                'created_at' => now()->subDays(14),
+            ]
+        );
     }
 }
