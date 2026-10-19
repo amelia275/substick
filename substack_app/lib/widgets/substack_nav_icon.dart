@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/theme/app_colors.dart';
 
 class SubstackNavIcon extends StatelessWidget {
   final int index;
@@ -14,7 +15,7 @@ class SubstackNavIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = Colors.black;
+    final color = active ? AppColors.iconPrimary : AppColors.iconSecondary;
 
     switch (index) {
       case 0: // Home
@@ -25,25 +26,25 @@ class SubstackNavIcon extends StatelessWidget {
         );
       case 1: // Read
         return Icon(
-          Icons.menu_book_outlined,
+          active ? Icons.menu_book_rounded : Icons.menu_book_outlined,
           size: size,
           color: color,
         );
       case 2: // Podcasts
         return Icon(
-          Icons.headphones_outlined,
+          active ? Icons.headphones_rounded : Icons.headphones_outlined,
           size: size,
           color: color,
         );
       case 3: // Chat
         return Icon(
-          Icons.chat_bubble_outline_rounded,
+          active ? Icons.chat_bubble_rounded : Icons.chat_bubble_outline_rounded,
           size: size,
           color: color,
         );
       case 4: // Activity
         return Icon(
-          Icons.notifications_none_rounded,
+          active ? Icons.notifications_rounded : Icons.notifications_none_rounded,
           size: size,
           color: color,
         );
