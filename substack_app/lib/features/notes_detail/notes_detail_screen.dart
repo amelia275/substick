@@ -1,7 +1,8 @@
 // TODO: Implement this screen/state. See README.md and docs/.
 import 'package:flutter/material.dart';
- // Import file halaman tujuan
-
+import 'package:substack_app/features/home/home_screen.dart';
+import 'package:substack_app/features/notes_detail/reply_feed_screen.dart';
+// Import file halaman tujuan
 
 void main() {
   runApp(const MaterialApp(home: MyWidget()));
@@ -16,42 +17,76 @@ class MyWidget extends StatefulWidget {
 // 1. Fungsi penolong ditaruh di dalam kelas State (di atas Widget build)
 
 class _MyWidgetState extends State<MyWidget> {
+  List<String> replies = [
+    'My favvv sejauh akuu main substrack, mangat authorrr',
+  ];
+  Future<void> _openReplyScreen() async {
+    final newReply = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (context) => const MyReply()),
+    );
+
+    // 3. Jika dapat balasan baru, tambahkan ke List dan update UI
+    if (newReply != null && newReply.isNotEmpty) {
+      setState(() {
+        replies.add(newReply);
+      });
+    }
+  }
+  bool isLiked = false;
+  int likeCount = 5;
+  void _toggleLike() {
+    setState(() {
+      isLiked = !isLiked;
+      if (isLiked) {
+        likeCount++;
+      } else {
+        likeCount--;
+      }
+    });
+  }
+
   // pop show modal
   void _showOptionMenu(BuildContext context) {
-  showModalBottomSheet(
-    context: context,
-    backgroundColor: Colors.black,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    isScrollControlled: true,
-    builder: (context) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.person_add_alt_1_outlined, color: Colors.white),
-              title: const Text('Ikuti Cindira', style: TextStyle(color: Colors.white)),
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.link, color: Colors.white),
-              title: const Text('Salin tautan', style: TextStyle(color: Colors.white)),
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.block, color: Colors.redAccent),
-              title: const Text('Blokir', style: TextStyle(color: Colors.redAccent)),
-              onTap: () => Navigator.pop(context),
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.black,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      isScrollControlled: true,
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.person_add_alt_1_outlined,
+                    color: Colors.white),
+                title: const Text('Ikuti Cindira',
+                    style: TextStyle(color: Colors.white)),
+                onTap: () => Navigator.pop(context),
+              ),
+              ListTile(
+                leading: const Icon(Icons.link, color: Colors.white),
+                title: const Text('Salin tautan',
+                    style: TextStyle(color: Colors.white)),
+                onTap: () => Navigator.pop(context),
+              ),
+              ListTile(
+                leading: const Icon(Icons.block, color: Colors.redAccent),
+                title: const Text('Blokir',
+                    style: TextStyle(color: Colors.redAccent)),
+                onTap: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget buildHoverIcon({
     required IconData defaultIcon,
     required IconData hoveredIcon,
@@ -66,7 +101,7 @@ class _MyWidgetState extends State<MyWidget> {
           onEnter: (_) => setState(() => isHovered = true),
           onExit: (_) => setState(() => isHovered = false),
           child: Column(
-             mainAxisSize: MainAxisSize.min,
+            mainAxisSize: MainAxisSize.min,
             children: [
               IconButton(
                 onPressed: onPressed,
@@ -75,18 +110,18 @@ class _MyWidgetState extends State<MyWidget> {
                 hoverColor: Colors.transparent,
                 icon: Icon(
                   isHovered ? hoveredIcon : defaultIcon,
-                  color: Colors.white,
+                  color: Colors.black,
                   size: 28,
-                ),
                 
+                ),
               ),
-              Text(
-              label,
-              style: TextStyle(
-                color: isHovered ? Colors.white : Colors.white, // Contoh: warna berubah pas di-hover
-                fontSize: 12,
-              )
-              )
+              Text(label,
+                  style: TextStyle(
+                    color: isHovered
+                        ? Colors.white
+                        : Colors.black, // Contoh: warna berubah pas di-hover
+                    fontSize: 12,
+                  ))
             ],
           ),
         );
@@ -97,21 +132,22 @@ class _MyWidgetState extends State<MyWidget> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: Colors.white,
         leading: IconButton(
           onPressed: () {
-            //  Navigator.push(context, 
-            //  MaterialPageRoute(
-            //   builder: (context) => const HomeScreen(),
-            //  ));
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const HomeScreen(),
+                ));
           },
-          icon: const Icon(Icons.arrow_back_sharp, color: Colors.white),
+          icon: const Icon(Icons.arrow_back_sharp, color: Colors.black),
         ),
         title: const Text(
           'Note',
-          style: const TextStyle(color: Colors.white, fontSize: 15),
+          style: const TextStyle(color: Colors.black, fontSize: 15),
         ),
         centerTitle: true,
         bottom: PreferredSize(
@@ -138,10 +174,10 @@ class _MyWidgetState extends State<MyWidget> {
                       const Row(
                         children: [
                           CircleAvatar(
-                            radius: 22,
-                            backgroundImage: NetworkImage(
-                              'https://wallpapers.com/images/hd/photography-nature-background-h2ifm0bbe638sw4p.jpg',
-                            ),
+                            radius: 18,
+                            child: Icon(Icons.person,
+                            size: 20, color: Colors.grey),
+                           backgroundColor:Color(0xFFEAEAEA)
                           ),
                           SizedBox(width: 10),
                           Column(
@@ -149,14 +185,17 @@ class _MyWidgetState extends State<MyWidget> {
                             children: [
                               Text(
                                 'Jaian',
-                                style: TextStyle(color: Colors.white),
+                                style: TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.bold),
                               ),
                               Row(
                                 children: [
-                                  Text(
-                                    '2Mg .',
-                                    style: TextStyle(color: Colors.white),
-                                  ),
+                                  Text('2Mg .',
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 10,
+                                      )),
                                   SizedBox(width: 10),
                                   Text(
                                     'Berlangganan',
@@ -179,149 +218,174 @@ class _MyWidgetState extends State<MyWidget> {
                       //     size: 28,
                       //   ),
                       // ),
-    PopupMenuButton<String>(
-  icon: const Icon(Icons.more_horiz, color: Color.fromARGB(255, 84, 79, 79),),
-  color: const Color(0xFF212121), // Warna background pop-up
-  shape: RoundedRectangleBorder(
-    borderRadius: BorderRadius.circular(12), // Sudut melengkung
-  ),
-  offset: const Offset(0, 60), // Mengatur posisi pop-up tepat di bawah tombol
-  onSelected: (value) {
-    // Aksi ketika salah satu menu diklik
-    if (value == 'follow') {
-      // Aksi ikuti
-    } else if (value == 'copy') {
-      // Aksi salin tautan
-    } else if (value == 'block') {
-      // Aksi blokir
-    }
-  },
-  itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-    const PopupMenuItem<String>(
-      value: 'follow',
-      child: Row(
-        children: [
-          Icon(Icons.person_add_alt_1_outlined, color: Colors.white),
-          SizedBox(width: 12),
-          Text('Ikuti Jaian', style: TextStyle(color: Colors.white)),
-        ],
-      ),
-    ),
-    const PopupMenuItem<String>(
-      value: 'copy',
-      child: Row(
-        children: [
-          Icon(Icons.link, color: Colors.white),
-          SizedBox(width: 12),
-          Text('Salin tautan', style: TextStyle(color: Colors.white)),
-        ],
-      ),
-    ),
-    const PopupMenuItem<String>(
-      value: 'save',
-      child: Row(
-        children: [
-          Icon(Icons.bookmark_border, color: Colors.white),
-          SizedBox(width: 12),
-          Text('Simpan', style: TextStyle(color: Colors.white)),
-        ],
-      ),
-    ),
-    const PopupMenuItem<String>(
-      value: 'share',
-      child: Row(
-        children: [
-          Icon(Icons.share_outlined, color: Colors.white),
-          SizedBox(width: 12),
-          Text('Bagikan', style: TextStyle(color: Colors.white)),
-        ],
-      ),
-    ),
-    const PopupMenuItem<String>(
-      value: 'download',
-      child: Row(
-        children: [
-          Icon(Icons.file_download, color: Colors.white),
-          SizedBox(width: 12),
-          Text('Simpan sebagai gambar', style: TextStyle(color: Colors.white)),
-        ],
-      ),
-    ),
-    const PopupMenuItem<String>(
-      value: 'copy_teks',
-      child: Row(
-        children: [
-          Icon(Icons.filter_center_focus, color: Colors.white),
-          SizedBox(width: 12),
-          Text('Salin teks ', style: TextStyle(color: Colors.white)),
-        ],
-      ),
-    ),
-    const PopupMenuItem<String>(
-      value: 'scan_teks',
-      child: Row(
-        children: [
-          Icon(Icons.link, color: Colors.white),
-          SizedBox(width: 12),
-          Text('Simpan sebagai gambar', style: TextStyle(color: Colors.white)),
-        ],
-      ),
-    ),
-    const PopupMenuItem<String>(
-      value: 'scan_teks',
-      child: Row(
-        children: [
-          Icon(Icons.auto_awesome_outlined, color: Colors.white),
-          SizedBox(width: 12),
-          Text('Pindai teks AI', style: TextStyle(color: Colors.white)),
-        ],
-      ),
-    ),
-    const PopupMenuItem<String>(
-      value: 'close',
-      child: Row(
-        children: [
-          Icon(Icons.close, color: Colors.white),
-          SizedBox(width: 12),
-          Text('Tampilkan lebih sedikit', style: TextStyle(color: Colors.white)),
-        ],
-      ),
-    ),
-   // Garis pemisah opsional
-    const PopupMenuItem<String>(
-      value: 'hide',
-      child: Row(
-        children: [
-          Icon(Icons.speaker_notes_off_outlined, color: Colors.redAccent),
-          SizedBox(width: 12),
-          Text('Sembunyikan penulis', style: TextStyle(color: Colors.redAccent)),
-        ],
-      ),
-    ),
-    const PopupMenuItem<String>(
-      value: 'block',
-      child: Row(
-        children: [
-          Icon(Icons.block, color: Colors.redAccent),
-          SizedBox(width: 12),
-          Text('Blokir', style: TextStyle(color: Colors.redAccent)),
-        ],
-      ),
-    ),
-    const PopupMenuItem<String>(
-      value: 'report',
-      child: Row(
-        children: [
-          Icon(Icons.error_outline, color: Colors.redAccent),
-          SizedBox(width: 12),
-          Text('Laporkan', style: TextStyle(color: Colors.redAccent)),
-        ],
-      ),
-    ),
-   
-  ],
-),
-                    
+                      PopupMenuButton<String>(
+                        icon: const Icon(
+                          Icons.more_horiz,
+                          color: Color.fromARGB(255, 123, 119, 119),
+                        ),
+                        color: Colors.white, // Warna background pop-up
+                        shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(12), // Sudut melengkung
+                        ),
+                        offset: const Offset(0,
+                            60), // Mengatur posisi pop-up tepat di bawah tombol
+                        onSelected: (value) {
+                          // Aksi ketika salah satu menu diklik
+                          if (value == 'follow') {
+                            // Aksi ikuti
+                          } else if (value == 'copy') {
+                            // Aksi salin tautan
+                          } else if (value == 'block') {
+                            // Aksi blokir
+                          }
+                        },
+                        itemBuilder: (BuildContext context) =>
+                            <PopupMenuEntry<String>>[
+                          const PopupMenuItem<String>(
+                            value: 'follow',
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.person_add_alt_1_outlined,
+                                ),
+                                SizedBox(width: 12),
+                                Text(
+                                  'Ikuti Jaian',
+                                  style: TextStyle(color: Colors.black),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'copy',
+                            child: Row(
+                              children: [
+                                Icon(Icons.link),
+                                SizedBox(width: 12),
+                                Text('Salin tautan',
+                                    style: TextStyle(color: Colors.black)),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'save',
+                            child: Row(
+                              children: [
+                                Icon(Icons.bookmark_border,
+                                    color: Colors.black),
+                                SizedBox(width: 12),
+                                Text('Simpan',
+                                    style: TextStyle(color: Colors.black)),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'share',
+                            child: Row(
+                              children: [
+                                Icon(Icons.share_outlined, color: Colors.black),
+                                SizedBox(width: 12),
+                                Text('Bagikan',
+                                    style: TextStyle(color: Colors.black)),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'download',
+                            child: Row(
+                              children: [
+                                Icon(Icons.file_download, color: Colors.black),
+                                SizedBox(width: 12),
+                                Text('Simpan sebagai gambar',
+                                    style: TextStyle(color: Colors.black)),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'copy_teks',
+                            child: Row(
+                              children: [
+                                Icon(Icons.filter_center_focus,
+                                    color: Colors.black),
+                                SizedBox(width: 12),
+                                Text('Salin teks ',
+                                    style: TextStyle(color: Colors.black)),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'scan_teks',
+                            child: Row(
+                              children: [
+                                Icon(Icons.link, color: Colors.black),
+                                SizedBox(width: 12),
+                                Text('Simpan sebagai gambar',
+                                    style: TextStyle(color: Colors.black)),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'scan_teks',
+                            child: Row(
+                              children: [
+                                Icon(Icons.auto_awesome_outlined,
+                                    color: Colors.black),
+                                SizedBox(width: 12),
+                                Text('Pindai teks AI',
+                                    style: TextStyle(color: Colors.black)),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'close',
+                            child: Row(
+                              children: [
+                                Icon(Icons.close, color: Colors.black),
+                                SizedBox(width: 12),
+                                Text('Tampilkan lebih sedikit',
+                                    style: TextStyle(color: Colors.black)),
+                              ],
+                            ),
+                          ),
+                          // Garis pemisah opsional
+                          const PopupMenuItem<String>(
+                            value: 'hide',
+                            child: Row(
+                              children: [
+                                Icon(Icons.speaker_notes_off_outlined,
+                                    color: Colors.redAccent),
+                                SizedBox(width: 12),
+                                Text('Sembunyikan penulis',
+                                    style: TextStyle(color: Colors.redAccent)),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'block',
+                            child: Row(
+                              children: [
+                                Icon(Icons.block, color: Colors.redAccent),
+                                SizedBox(width: 12),
+                                Text('Blokir',
+                                    style: TextStyle(color: Colors.redAccent)),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'report',
+                            child: Row(
+                              children: [
+                                Icon(Icons.error_outline,
+                                    color: Colors.redAccent),
+                                SizedBox(width: 12),
+                                Text('Laporkan',
+                                    style: TextStyle(color: Colors.redAccent)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                   const SizedBox(height: 10),
@@ -329,8 +393,8 @@ class _MyWidgetState extends State<MyWidget> {
                   const Column(
                     children: const [
                       Text(
-                        'aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate',
-                        style: const TextStyle(color: Colors.white),
+                        'Asap kebakaran sangat  mengganggu aktivitas berkendara, hal ini dapat berpotensi kecelakaan',
+                        style: const TextStyle(color: Colors.black),
                       ),
                     ],
                   ),
@@ -360,12 +424,12 @@ class _MyWidgetState extends State<MyWidget> {
               ),
             ),
             const SizedBox(height: 10),
-            const Padding(
+            Padding(
               padding: EdgeInsetsGeometry.fromLTRB(8, 0, 8, 0),
               child: Row(
                 children: [
                   Text(
-                    '5 SUKA . 2 RESTACKS',
+                    '$likeCount SUKA . 2 RESTACKS',
                     style: TextStyle(
                       color: Color.fromARGB(255, 65, 62, 62),
                     ),
@@ -385,17 +449,24 @@ class _MyWidgetState extends State<MyWidget> {
               ),
             ),
             const SizedBox(height: 10),
+
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 IconButton(
-                  onPressed: () {},
-                  icon: const Icon(Icons.favorite_outline),
-                  iconSize: 30,
+                  onPressed: _toggleLike,
+                  icon: Icon(
+                    isLiked ? Icons.favorite : Icons.favorite_border,
+                    color: isLiked ? Colors.red : Colors.black,
+                    size: 30,
+                  ),
                 ),
                 const SizedBox(width: 40),
                 IconButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(context, 
+                    MaterialPageRoute(builder: (context)=> MyReply()));
+                  },
                   icon: const Icon(Icons.chat_bubble_outline),
                   iconSize: 30,
                 ),
@@ -443,13 +514,13 @@ class _MyWidgetState extends State<MyWidget> {
                             children: [
                               Text(
                                 'readtings',
-                                style: TextStyle(color: Colors.white),
+                                style: TextStyle(color: Colors.black),
                               ),
                               const Row(
                                 children: const [
                                   Text(
                                     '3Mg .',
-                                    style: const TextStyle(color: Colors.white),
+                                    style: const TextStyle(color: Colors.black),
                                   ),
                                   Text(
                                     ' Berlangganan',
@@ -461,7 +532,6 @@ class _MyWidgetState extends State<MyWidget> {
                           ),
                         ],
                       ),
-
                       Row(
                         children: [
                           IconButton(
@@ -488,7 +558,7 @@ class _MyWidgetState extends State<MyWidget> {
                       children: const [
                         Text(
                           'Turut prihatin',
-                          style: const TextStyle(color: Colors.white),
+                          style: const TextStyle(color: Colors.black),
                         ),
                         SizedBox(height: 10),
                         Row(
@@ -528,11 +598,10 @@ class _MyWidgetState extends State<MyWidget> {
                       ),
                     ),
                   ),
-  
                 ],
               ),
             ),
-              Padding(
+            Padding(
               padding: const EdgeInsets.fromLTRB(10, 5, 5, 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -552,13 +621,12 @@ class _MyWidgetState extends State<MyWidget> {
                             children: [
                               Text(
                                 'Andri',
-                                style: TextStyle(color: Colors.white),
+                                style: TextStyle(color: Colors.black),
                               ),
                               const Row(
                                 children: const [
                                   Text(
                                     '4Mg .',
-                                    style: const TextStyle(color: Colors.white),
                                   ),
                                   Text(
                                     ' Berlangganan',
@@ -570,7 +638,6 @@ class _MyWidgetState extends State<MyWidget> {
                           ),
                         ],
                       ),
-
                       Row(
                         children: [
                           IconButton(
@@ -589,7 +656,7 @@ class _MyWidgetState extends State<MyWidget> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 5),
                   const Padding(
                     padding: EdgeInsets.only(left: 45),
                     child: const Column(
@@ -597,7 +664,7 @@ class _MyWidgetState extends State<MyWidget> {
                       children: const [
                         Text(
                           'Semoga segera membaik',
-                          style: const TextStyle(color: Colors.white),
+                          style: const TextStyle(color: Colors.black),
                         ),
                         SizedBox(height: 10),
                         Row(
@@ -626,7 +693,7 @@ class _MyWidgetState extends State<MyWidget> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 5),
                   Container(
                     decoration: const BoxDecoration(
                       border: Border(
@@ -637,11 +704,10 @@ class _MyWidgetState extends State<MyWidget> {
                       ),
                     ),
                   ),
-  
                 ],
               ),
             ),
-             Padding(
+            Padding(
               padding: const EdgeInsets.fromLTRB(10, 5, 5, 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -661,13 +727,12 @@ class _MyWidgetState extends State<MyWidget> {
                             children: [
                               Text(
                                 'Cynta',
-                                style: TextStyle(color: Colors.white),
+                                style: TextStyle(color: Colors.black),
                               ),
                               const Row(
                                 children: const [
                                   Text(
                                     '4Mg .',
-                                    style: const TextStyle(color: Colors.white),
                                   ),
                                   Text(
                                     ' Berlangganan',
@@ -679,7 +744,6 @@ class _MyWidgetState extends State<MyWidget> {
                           ),
                         ],
                       ),
-
                       Row(
                         children: [
                           IconButton(
@@ -698,7 +762,7 @@ class _MyWidgetState extends State<MyWidget> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 5),
                   const Padding(
                     padding: EdgeInsets.only(left: 45),
                     child: const Column(
@@ -706,7 +770,7 @@ class _MyWidgetState extends State<MyWidget> {
                       children: const [
                         Text(
                           ':(',
-                          style: const TextStyle(color: Colors.white),
+                          style: const TextStyle(color: Colors.black),
                         ),
                         SizedBox(height: 10),
                         Row(
@@ -735,7 +799,7 @@ class _MyWidgetState extends State<MyWidget> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 5),
                   Container(
                     decoration: const BoxDecoration(
                       border: Border(
@@ -746,12 +810,10 @@ class _MyWidgetState extends State<MyWidget> {
                       ),
                     ),
                   ),
-  
                 ],
               ),
             ),
-            
-            
+
             //  Container(
             //   decoration: const BoxDecoration(
             //     border: Border(
@@ -765,46 +827,47 @@ class _MyWidgetState extends State<MyWidget> {
           ],
         ),
       ),
-
       bottomNavigationBar: Container(
+  
         decoration: const BoxDecoration(
           border: const Border(
-            top: const BorderSide(color: const Color.fromARGB(255, 84, 79, 79), width: 1.0),
+            top: const BorderSide(
+                color: const Color.fromARGB(255, 84, 79, 79), width: 1.0),
           ),
         ),
         child: BottomAppBar(
-          color: Colors.black,
+          color: Colors.white,
           elevation: 0,
           padding: EdgeInsets.zero,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-                  buildHoverIcon(
-                    defaultIcon: Icons.home_outlined,
-                    hoveredIcon: Icons.home,
-                    onPressed: () {},
-                    label: 'Beranda',
-                  ),
-                       
+              buildHoverIcon(
+                defaultIcon: Icons.home_outlined,
+                hoveredIcon: Icons.home,
+                onPressed: () {},
+                label: 'Beranda',
+              ),
+
               // 2. Chat / Gelembung
               buildHoverIcon(
                 defaultIcon: Icons.menu_book_outlined,
-                hoveredIcon: Icons.chat_bubble,
+                hoveredIcon: Icons.menu_book_outlined,
                 onPressed: () {},
-                 label: 'Bacaan',
+                label: 'Bacaan',
               ),
               buildHoverIcon(
                 defaultIcon: Icons.headphones_outlined,
-                hoveredIcon: Icons.chat_bubble,
+                hoveredIcon: Icons.headphones_rounded,
                 onPressed: () {},
-                 label: 'Podcast',
+                label: 'Podcast',
               ),
 
               buildHoverIcon(
                 defaultIcon: Icons.chat_bubble_outline,
-                hoveredIcon: Icons.headphones,
+                hoveredIcon: Icons.chat_bubble,
                 onPressed: () {},
-                 label: 'Obrolan',
+                label: 'Obrolan',
               ),
 
               // 4. Notification
@@ -812,7 +875,7 @@ class _MyWidgetState extends State<MyWidget> {
                 defaultIcon: Icons.notifications_none_outlined,
                 hoveredIcon: Icons.notifications,
                 onPressed: () {},
-                 label: 'aktivitas',
+                label: 'aktivitas',
               ),
             ],
           ),

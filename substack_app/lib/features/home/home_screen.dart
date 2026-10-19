@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../widgets/app_bottom_navigation.dart';
 import '../../widgets/app_top_bar.dart';
+import '../notes_detail/notes_detail_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -18,8 +19,25 @@ class HomeScreen extends StatelessWidget {
       ),
       body: ListView(
         padding: EdgeInsets.zero,
-        children: const [
+        children:  <Widget> [
           // Quote berbentuk gambar
+       GestureDetector(
+     onTap: () {
+       Navigator.push(context, 
+       MaterialPageRoute(builder: (context) => MyWidget()
+       )
+       );
+     },
+     child: _NoteItem(
+            username: 'Jaian',
+            time: '2mg',
+            content:'Asap kebakaran sangat  mengganggu aktivitas berkendara, berpotensi kecelakaan' ,
+            imageUrl: 'https://www.financialexpress.com/wp-content/uploads/2021/09/air-pollution-noida.jpg',
+            likes: '5',
+            comments: '3',
+            restacks: '2',
+       ),
+       ),
           _NoteItem(
             username: 'wordsloftupsaid',
             time: '2mo',
