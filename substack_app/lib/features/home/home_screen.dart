@@ -37,33 +37,34 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: AppColors.background,
       appBar: AppTopBar(
         onSearchTap: () {},
-        onProfileTap: () {},
+        onProfileTap: () => Navigator.pushNamed(context, '/profile'),
       ),
       body: ListView(
         padding: EdgeInsets.zero,
-        children:  <Widget> [
+        children: <Widget>[
           // Quote berbentuk gambar
-       GestureDetector(
-     onTap: () {
-       Navigator.push(context, 
-       MaterialPageRoute(builder: (context) => MyWidget()
-       )
-       );
-     },
-     child: _NoteItem(
-            username: 'Jaian',
-            time: '2mg',
-            content:'Asap kebakaran sangat  mengganggu aktivitas berkendara, berpotensi kecelakaan' ,
-            imageUrl: 'https://www.financialexpress.com/wp-content/uploads/2021/09/air-pollution-noida.jpg',
-            likes: '5',
-            comments: '3',
-            restacks: '2',
-       ),
-       ),
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                  context, MaterialPageRoute(builder: (context) => MyWidget()));
+            },
+            child: _NoteItem(
+              username: 'Jaian',
+              time: '2mg',
+              content:
+                  'Asap kebakaran sangat  mengganggu aktivitas berkendara, berpotensi kecelakaan',
+              imageUrl:
+                  'https://www.financialexpress.com/wp-content/uploads/2021/09/air-pollution-noida.jpg',
+              likes: '5',
+              comments: '3',
+              restacks: '2',
+            ),
+          ),
           _NoteItem(
             username: 'wordsloftupsaid',
             time: '2mo',
-            imageUrl: 'https://placehold.co/800x450/ffffff/2b2823.png?text=What+words+are+better+than+I+love+you%3F',
+            imageUrl:
+                'https://placehold.co/800x450/ffffff/2b2823.png?text=What+words+are+better+than+I+love+you%3F',
             likes: '13.5k',
             comments: '48',
             restacks: '4.3k',
@@ -73,8 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _NoteItem(
             username: 'nanash',
             time: '1d',
-            content:
-                'baru sadar kehilangan spark tuh ternyata ga selalu '
+            content: 'baru sadar kehilangan spark tuh ternyata ga selalu '
                 'kelihatan kayak sedih, kadang kita masih ketawa, '
                 'masih kerja, masih ngobrol, masih main, masih jadi '
                 'diri sendiri, tapi rasanya ada bagian dari diri kita '
@@ -246,7 +246,8 @@ class _NoteItem extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.more_horiz, size: 12, color: AppColors.iconSecondary),
+              const Icon(Icons.more_horiz,
+                  size: 12, color: AppColors.iconSecondary),
               const SizedBox(width: 8),
               const Icon(Icons.close, size: 19, color: AppColors.iconSecondary),
             ],
@@ -325,7 +326,6 @@ class _NoteItem extends StatelessWidget {
                       ],
                     ),
                   ),
-
                   Positioned(
                     right: 0,
                     bottom: 38,
