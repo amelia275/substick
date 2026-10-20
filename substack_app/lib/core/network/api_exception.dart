@@ -3,5 +3,6 @@ class ApiException implements Exception {
   final int? statusCode;
   const ApiException(this.message, {this.statusCode});
   @override
-  String toString() => 'ApiException($statusCode): $message';
+  String toString() =>
+      statusCode == null ? message : '$message (HTTP $statusCode)';
 }

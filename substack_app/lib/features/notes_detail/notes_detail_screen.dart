@@ -1,885 +1,601 @@
-// TODO: Implement this screen/state. See README.md and docs/.
 import 'package:flutter/material.dart';
-import 'package:substack_app/features/home/home_screen.dart';
-import 'package:substack_app/features/notes_detail/reply_feed_screen.dart';
-// Import file halaman tujuan
+import '../../core/network/api_exception.dart';
+import '../../core/routing/app_navigation.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/utils/formatters.dart';
+import '../../models/comment.dart';
+import '../../models/post.dart';
+import '../../services/interaction_service.dart';
+import '../../services/post_service.dart';
+import '../../widgets/app_bottom_navigation.dart';
+import '../../widgets/person_avatar.dart';
+import 'reply_feed_screen.dart';
 
-void main() {
-  runApp(const MaterialApp(home: MyWidget()));
-}
+const Color _lineColor = Color.fromARGB(255, 84, 79, 79);
 
-class MyWidget extends StatefulWidget {
-  const MyWidget({super.key});
+class NotesDetailScreen extends StatefulWidget {
+  final Post post;
+
+  const NotesDetailScreen({super.key, required this.post});
 
   @override
-  State<MyWidget> createState() => _MyWidgetState();
+  State<NotesDetailScreen> createState() => _NotesDetailScreenState();
 }
-// 1. Fungsi penolong ditaruh di dalam kelas State (di atas Widget build)
 
-class _MyWidgetState extends State<MyWidget> {
-  List<String> replies = [
-    'My favvv sejauh akuu main substrack, mangat authorrr',
-  ];
-  Future<void> _openReplyScreen() async {
-    final newReply = await Navigator.push<String>(
-      context,
-      MaterialPageRoute(builder: (context) => const MyReply()),
-    );
+class _NotesDetailScreenState extends State<NotesDetailScreen> {
+  final PostService _postService = PostService();
+  final InteractionService _interactionService = InteractionService();
 
-    // 3. Jika dapat balasan baru, tambahkan ke List dan update UI
-    if (newReply != null && newReply.isNotEmpty) {
+  late Post _post;
+  List<Comment> _comments = [];
+
+  late bool _liked;
+  late int _likeCount;
+  late bool _restacked;
+  late int _restackCount;
+  late int _commentCount;
+
+  bool _likeBusy = false;
+  bool _restackBusy = false;
+  bool _isLoading = true;
+  String? _loadError;
+
+  // true kalau ada aksi yang berhasil tersimpan, supaya Home memuat ulang.
+  bool _changed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _post = widget.post;
+    _comments = widget.post.comments;
+    _liked = widget.post.likedByMe;
+    _likeCount = widget.post.likesCount;
+    _restacked = widget.post.restackedByMe;
+    _restackCount = widget.post.restacksCount;
+    _commentCount = widget.post.commentsCount;
+    _loadLatest();
+  }
+
+  Future<void> _loadLatest() async {
+    try {
+      final latest = await _postService.fetchPost(_post.id);
+      if (!mounted) return;
+
       setState(() {
-        replies.add(newReply);
+        _post = latest;
+        _comments = latest.comments;
+        _commentCount = latest.commentsCount;
+        if (!_likeBusy) {
+          _liked = latest.likedByMe;
+          _likeCount = latest.likesCount;
+        }
+        if (!_restackBusy) {
+          _restacked = latest.restackedByMe;
+          _restackCount = latest.restacksCount;
+        }
+        _isLoading = false;
+        _loadError = null;
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _loadError = e.message;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _loadError = 'Gagal memuat balasan.';
       });
     }
   }
-  bool isLiked = false;
-  int likeCount = 5;
-  void _toggleLike() {
+
+  void _retry() {
     setState(() {
-      isLiked = !isLiked;
-      if (isLiked) {
-        likeCount++;
-      } else {
-        likeCount--;
-      }
+      _isLoading = true;
+      _loadError = null;
     });
+    _loadLatest();
   }
 
-  // pop show modal
-  void _showOptionMenu(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.black,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      isScrollControlled: true,
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.person_add_alt_1_outlined,
-                    color: Colors.white),
-                title: const Text('Ikuti Cindira',
-                    style: TextStyle(color: Colors.white)),
-                onTap: () => Navigator.pop(context),
-              ),
-              ListTile(
-                leading: const Icon(Icons.link, color: Colors.white),
-                title: const Text('Salin tautan',
-                    style: TextStyle(color: Colors.white)),
-                onTap: () => Navigator.pop(context),
-              ),
-              ListTile(
-                leading: const Icon(Icons.block, color: Colors.redAccent),
-                title: const Text('Blokir',
-                    style: TextStyle(color: Colors.redAccent)),
-                onTap: () => Navigator.pop(context),
-              ),
-            ],
-          ),
-        );
-      },
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
     );
   }
 
-  Widget buildHoverIcon({
-    required IconData defaultIcon,
-    required IconData hoveredIcon,
-    required VoidCallback onPressed,
-    required String label,
-  }) {
-    bool isHovered = false;
+  void _closeScreen() {
+    final post = widget.post;
+    post.likedByMe = _liked;
+    post.likesCount = _likeCount;
+    post.restackedByMe = _restacked;
+    post.restacksCount = _restackCount;
+    post.commentsCount = _commentCount;
 
-    return StatefulBuilder(
-      builder: (context, setState) {
-        return MouseRegion(
-          onEnter: (_) => setState(() => isHovered = true),
-          onExit: (_) => setState(() => isHovered = false),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                onPressed: onPressed,
-                splashColor: Colors.transparent,
-                highlightColor: Colors.transparent,
-                hoverColor: Colors.transparent,
-                icon: Icon(
-                  isHovered ? hoveredIcon : defaultIcon,
-                  color: Colors.black,
-                  size: 28,
-                
-                ),
-              ),
-              Text(label,
-                  style: TextStyle(
-                    color: isHovered
-                        ? Colors.white
-                        : Colors.black, // Contoh: warna berubah pas di-hover
-                    fontSize: 12,
-                  ))
-            ],
-          ),
-        );
+    Navigator.pop(context, _changed);
+  }
+
+  Future<void> _toggleLike() async {
+    if (_likeBusy) return;
+
+    final previousLiked = _liked;
+    final previousCount = _likeCount;
+    final wantLiked = !previousLiked;
+
+    setState(() {
+      _likeBusy = true;
+      _liked = wantLiked;
+      _likeCount = previousCount + (wantLiked ? 1 : -1);
+    });
+
+    try {
+      final result =
+          await _interactionService.setLike(_post.id, liked: wantLiked);
+      if (!mounted) return;
+      setState(() {
+        _liked = result.active;
+        _likeCount = result.count;
+        _changed = true;
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _liked = previousLiked;
+        _likeCount = previousCount;
+      });
+      _showMessage(e.message);
+    } finally {
+      if (mounted) setState(() => _likeBusy = false);
+    }
+  }
+
+  Future<void> _toggleRestack() async {
+    if (_restackBusy) return;
+
+    final previousRestacked = _restacked;
+    final previousCount = _restackCount;
+    final wantRestacked = !previousRestacked;
+
+    setState(() {
+      _restackBusy = true;
+      _restacked = wantRestacked;
+      _restackCount = previousCount + (wantRestacked ? 1 : -1);
+    });
+
+    try {
+      final result = await _interactionService.setRestack(
+        _post.id,
+        restacked: wantRestacked,
+      );
+      if (!mounted) return;
+      setState(() {
+        _restacked = result.active;
+        _restackCount = result.count;
+        _changed = true;
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _restacked = previousRestacked;
+        _restackCount = previousCount;
+      });
+      _showMessage(e.message);
+    } finally {
+      if (mounted) setState(() => _restackBusy = false);
+    }
+  }
+
+  Future<void> _openReplyScreen() async {
+    final created = await Navigator.push<Comment>(
+      context,
+      MaterialPageRoute(builder: (_) => ReplyScreen(post: _post)),
+    );
+
+    if (created == null || !mounted) return;
+
+    setState(() {
+      _comments = [..._comments, created];
+      _commentCount += 1;
+      _changed = true;
+    });
+  }
+
+  PopupMenuItem<String> _menuItem(
+    String value,
+    IconData icon,
+    String label, {
+    Color color = Colors.black,
+  }) {
+    return PopupMenuItem<String>(
+      value: value,
+      child: Row(
+        children: [
+          Icon(icon, color: color),
+          const SizedBox(width: 12),
+          Text(label, style: TextStyle(color: color)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOptionsMenu(String authorName) {
+    return PopupMenuButton<String>(
+      icon: const Icon(
+        Icons.more_horiz,
+        color: Color.fromARGB(255, 123, 119, 119),
+      ),
+      color: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      offset: const Offset(0, 60),
+      onSelected: (value) {
+        // Aksi menu belum disambungkan.
       },
+      itemBuilder: (context) => <PopupMenuEntry<String>>[
+        _menuItem('follow', Icons.person_add_alt_1_outlined, 'Ikuti $authorName'),
+        _menuItem('copy', Icons.link, 'Salin tautan'),
+        _menuItem('save', Icons.bookmark_border, 'Simpan'),
+        _menuItem('share', Icons.share_outlined, 'Bagikan'),
+        _menuItem('download', Icons.file_download, 'Simpan sebagai gambar'),
+        _menuItem('copy_teks', Icons.filter_center_focus, 'Salin teks'),
+        _menuItem('scan_teks', Icons.link, 'Simpan sebagai gambar'),
+        _menuItem('scan_teks', Icons.auto_awesome_outlined, 'Pindai teks AI'),
+        _menuItem('close', Icons.close, 'Tampilkan lebih sedikit'),
+        _menuItem(
+          'hide',
+          Icons.speaker_notes_off_outlined,
+          'Sembunyikan penulis',
+          color: Colors.redAccent,
+        ),
+        _menuItem('block', Icons.block, 'Blokir', color: Colors.redAccent),
+        _menuItem('report', Icons.error_outline, 'Laporkan',
+            color: Colors.redAccent),
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
+    final authorName = _post.username ?? _post.authorName ?? 'Pengguna';
+    final time = formatPostTime(_post.publishedAt);
+    final hasTitle = _post.type != 'note' &&
+        _post.title != null &&
+        _post.title!.isNotEmpty;
+    final hasImage = _post.imageUrl != null && _post.imageUrl!.isNotEmpty;
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) _closeScreen();
+      },
+      child: Scaffold(
         backgroundColor: Colors.white,
-        leading: IconButton(
-          onPressed: () {
-            Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const HomeScreen(),
-                ));
-          },
-          icon: const Icon(Icons.arrow_back_sharp, color: Colors.black),
-        ),
-        title: const Text(
-          'Note',
-          style: const TextStyle(color: Colors.black, fontSize: 15),
-        ),
-        centerTitle: true,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1.0), // Tinggi border
-          child: Container(
-            color: Colors.grey, // Warna border bawah AppBar
-            height: 1.0, // Ketebalan garis
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          leading: IconButton(
+            onPressed: _closeScreen,
+            icon: const Icon(Icons.arrow_back_sharp, color: Colors.black),
+          ),
+          title: const Text(
+            'Note',
+            style: TextStyle(color: Colors.black, fontSize: 15),
+          ),
+          centerTitle: true,
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1.0),
+            child: Container(color: Colors.grey, height: 1.0),
           ),
         ),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-              child: Column(
-                // <-- Bungkus pakai Column ini
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 1. Profil & Tombol (Row Atas)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        body: RefreshIndicator(
+          color: AppColors.primary,
+          onRefresh: _loadLatest,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Row(
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          CircleAvatar(
-                            radius: 18,
-                            child: Icon(Icons.person,
-                            size: 20, color: Colors.grey),
-                           backgroundColor:Color(0xFFEAEAEA)
-                          ),
-                          SizedBox(width: 10),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          Row(
                             children: [
-                              Text(
-                                'Jaian',
-                                style: TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.bold),
+                              PersonAvatar(
+                                name: authorName,
+                                imageUrl: _post.authorAvatarUrl,
                               ),
-                              Row(
+                              const SizedBox(width: 10),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('2Mg .',
-                                      style: TextStyle(
-                                        color: Colors.black,
-                                        fontSize: 10,
-                                      )),
-                                  SizedBox(width: 10),
                                   Text(
-                                    'Berlangganan',
-                                    style: TextStyle(
-                                      color: Colors.red,
-                                      fontSize: 11,
+                                    authorName,
+                                    style: const TextStyle(
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
+                                  Row(
+                                    children: [
+                                      if (time.isNotEmpty) ...[
+                                        Text(
+                                          '$time ·',
+                                          style: const TextStyle(
+                                            color: Colors.black,
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                      ],
+                                      const Text(
+                                        'Berlangganan',
+                                        style: TextStyle(
+                                          color: AppColors.primary,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ],
                               ),
                             ],
                           ),
+                          _buildOptionsMenu(authorName),
                         ],
                       ),
-                      //   IconButton(
-                      //   onPressed: () {},
-                      //   icon: const Icon(
-                      //     Icons.more_horiz,
-                      //     color: Color.fromARGB(255, 84, 79, 79),
-                      //     size: 28,
-                      //   ),
-                      // ),
-                      PopupMenuButton<String>(
-                        icon: const Icon(
-                          Icons.more_horiz,
-                          color: Color.fromARGB(255, 123, 119, 119),
+                      const SizedBox(height: 10),
+                      if (hasTitle) ...[
+                        Text(
+                          _post.title!,
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            height: 1.3,
+                          ),
                         ),
-                        color: Colors.white, // Warna background pop-up
-                        shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(12), // Sudut melengkung
-                        ),
-                        offset: const Offset(0,
-                            60), // Mengatur posisi pop-up tepat di bawah tombol
-                        onSelected: (value) {
-                          // Aksi ketika salah satu menu diklik
-                          if (value == 'follow') {
-                            // Aksi ikuti
-                          } else if (value == 'copy') {
-                            // Aksi salin tautan
-                          } else if (value == 'block') {
-                            // Aksi blokir
-                          }
-                        },
-                        itemBuilder: (BuildContext context) =>
-                            <PopupMenuEntry<String>>[
-                          const PopupMenuItem<String>(
-                            value: 'follow',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.person_add_alt_1_outlined,
-                                ),
-                                SizedBox(width: 12),
-                                Text(
-                                  'Ikuti Jaian',
-                                  style: TextStyle(color: Colors.black),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const PopupMenuItem<String>(
-                            value: 'copy',
-                            child: Row(
-                              children: [
-                                Icon(Icons.link),
-                                SizedBox(width: 12),
-                                Text('Salin tautan',
-                                    style: TextStyle(color: Colors.black)),
-                              ],
-                            ),
-                          ),
-                          const PopupMenuItem<String>(
-                            value: 'save',
-                            child: Row(
-                              children: [
-                                Icon(Icons.bookmark_border,
-                                    color: Colors.black),
-                                SizedBox(width: 12),
-                                Text('Simpan',
-                                    style: TextStyle(color: Colors.black)),
-                              ],
-                            ),
-                          ),
-                          const PopupMenuItem<String>(
-                            value: 'share',
-                            child: Row(
-                              children: [
-                                Icon(Icons.share_outlined, color: Colors.black),
-                                SizedBox(width: 12),
-                                Text('Bagikan',
-                                    style: TextStyle(color: Colors.black)),
-                              ],
-                            ),
-                          ),
-                          const PopupMenuItem<String>(
-                            value: 'download',
-                            child: Row(
-                              children: [
-                                Icon(Icons.file_download, color: Colors.black),
-                                SizedBox(width: 12),
-                                Text('Simpan sebagai gambar',
-                                    style: TextStyle(color: Colors.black)),
-                              ],
-                            ),
-                          ),
-                          const PopupMenuItem<String>(
-                            value: 'copy_teks',
-                            child: Row(
-                              children: [
-                                Icon(Icons.filter_center_focus,
-                                    color: Colors.black),
-                                SizedBox(width: 12),
-                                Text('Salin teks ',
-                                    style: TextStyle(color: Colors.black)),
-                              ],
-                            ),
-                          ),
-                          const PopupMenuItem<String>(
-                            value: 'scan_teks',
-                            child: Row(
-                              children: [
-                                Icon(Icons.link, color: Colors.black),
-                                SizedBox(width: 12),
-                                Text('Simpan sebagai gambar',
-                                    style: TextStyle(color: Colors.black)),
-                              ],
-                            ),
-                          ),
-                          const PopupMenuItem<String>(
-                            value: 'scan_teks',
-                            child: Row(
-                              children: [
-                                Icon(Icons.auto_awesome_outlined,
-                                    color: Colors.black),
-                                SizedBox(width: 12),
-                                Text('Pindai teks AI',
-                                    style: TextStyle(color: Colors.black)),
-                              ],
-                            ),
-                          ),
-                          const PopupMenuItem<String>(
-                            value: 'close',
-                            child: Row(
-                              children: [
-                                Icon(Icons.close, color: Colors.black),
-                                SizedBox(width: 12),
-                                Text('Tampilkan lebih sedikit',
-                                    style: TextStyle(color: Colors.black)),
-                              ],
-                            ),
-                          ),
-                          // Garis pemisah opsional
-                          const PopupMenuItem<String>(
-                            value: 'hide',
-                            child: Row(
-                              children: [
-                                Icon(Icons.speaker_notes_off_outlined,
-                                    color: Colors.redAccent),
-                                SizedBox(width: 12),
-                                Text('Sembunyikan penulis',
-                                    style: TextStyle(color: Colors.redAccent)),
-                              ],
-                            ),
-                          ),
-                          const PopupMenuItem<String>(
-                            value: 'block',
-                            child: Row(
-                              children: [
-                                Icon(Icons.block, color: Colors.redAccent),
-                                SizedBox(width: 12),
-                                Text('Blokir',
-                                    style: TextStyle(color: Colors.redAccent)),
-                              ],
-                            ),
-                          ),
-                          const PopupMenuItem<String>(
-                            value: 'report',
-                            child: Row(
-                              children: [
-                                Icon(Icons.error_outline,
-                                    color: Colors.redAccent),
-                                SizedBox(width: 12),
-                                Text('Laporkan',
-                                    style: TextStyle(color: Colors.redAccent)),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-
-                  const Column(
-                    children: const [
+                        const SizedBox(height: 8),
+                      ],
                       Text(
-                        'Asap kebakaran sangat  mengganggu aktivitas berkendara, hal ini dapat berpotensi kecelakaan',
-                        style: const TextStyle(color: Colors.black),
+                        _post.content,
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontSize: 16,
+                          height: 1.4,
+                        ),
+                      ),
+                      if (hasImage) ...[
+                        const SizedBox(height: 10),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(
+                            _post.imageUrl!,
+                            height: 200,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              height: 200,
+                              color: const Color(0xFFF5F5F5),
+                              alignment: Alignment.center,
+                              child: const Text('Gambar tidak dapat dimuat'),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 25),
+                const Divider(height: 1, thickness: 1, color: _lineColor),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
+                  child: Text(
+                    '${formatCount(_likeCount)} SUKA · '
+                    '${formatCount(_restackCount)} RESTACK · '
+                    '${formatCount(_commentCount)} BALASAN',
+                    style: const TextStyle(
+                      color: Color.fromARGB(255, 65, 62, 62),
+                      fontSize: 12.5,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ),
+                const Divider(height: 1, thickness: 1, color: _lineColor),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        onPressed: _toggleLike,
+                        icon: Icon(
+                          _liked ? Icons.favorite : Icons.favorite_border,
+                          color: _liked ? Colors.red : Colors.black,
+                          size: 30,
+                        ),
+                      ),
+                      const SizedBox(width: 40),
+                      IconButton(
+                        onPressed: _openReplyScreen,
+                        icon: const Icon(Icons.chat_bubble_outline),
+                        iconSize: 30,
+                      ),
+                      const SizedBox(width: 40),
+                      IconButton(
+                        onPressed: _toggleRestack,
+                        icon: Icon(
+                          Icons.loop_outlined,
+                          color: _restacked ? AppColors.primary : Colors.black,
+                          size: 30,
+                        ),
+                      ),
+                      const SizedBox(width: 40),
+                      IconButton(
+                        onPressed: () {},
+                        icon: const Icon(Icons.share_outlined),
+                        iconSize: 30,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  // 2. Gambar Postingan (Di Bawah Profil)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      'https://www.financialexpress.com/wp-content/uploads/2021/09/air-pollution-noida.jpg',
-                      height: 200,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 25),
-            Container(
-              decoration: const BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    width: 1.0,
-                    color: Color.fromARGB(255, 84, 79, 79),
-                  ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Padding(
-              padding: EdgeInsetsGeometry.fromLTRB(8, 0, 8, 0),
-              child: Row(
-                children: [
-                  Text(
-                    '$likeCount SUKA . 2 RESTACKS',
-                    style: TextStyle(
-                      color: Color.fromARGB(255, 65, 62, 62),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 10),
-            Container(
-              decoration: const BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    width: 1.0,
-                    color: Color.fromARGB(255, 84, 79, 79),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                  onPressed: _toggleLike,
-                  icon: Icon(
-                    isLiked ? Icons.favorite : Icons.favorite_border,
-                    color: isLiked ? Colors.red : Colors.black,
-                    size: 30,
-                  ),
-                ),
-                const SizedBox(width: 40),
-                IconButton(
-                  onPressed: () {
-                    Navigator.push(context, 
-                    MaterialPageRoute(builder: (context)=> MyReply()));
-                  },
-                  icon: const Icon(Icons.chat_bubble_outline),
-                  iconSize: 30,
-                ),
-                const SizedBox(width: 40),
-                IconButton(
-                  onPressed: () {},
-                  icon: const Icon(Icons.loop_outlined),
-                  iconSize: 30,
-                ),
-                const SizedBox(width: 40),
-                IconButton(
-                  onPressed: () {},
-                  icon: const Icon(Icons.share_outlined),
-                  iconSize: 30,
-                ),
-                const SizedBox(width: 40),
+                const Divider(height: 1, thickness: 1, color: _lineColor),
+                _buildReplies(),
               ],
             ),
-            const SizedBox(height: 10),
-            Container(
-              decoration: const BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    width: 1.0,
-                    color: Color.fromARGB(255, 84, 79, 79),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(10, 0, 5, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Row(
-                        children: [
-                          const CircleAvatar(),
-                          const SizedBox(width: 5),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'readtings',
-                                style: TextStyle(color: Colors.black),
-                              ),
-                              const Row(
-                                children: const [
-                                  Text(
-                                    '3Mg .',
-                                    style: const TextStyle(color: Colors.black),
-                                  ),
-                                  Text(
-                                    ' Berlangganan',
-                                    style: const TextStyle(color: Colors.red),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          IconButton(
-                            onPressed: () {},
-                            icon: const Icon(Icons.more_horiz),
-                            color: const Color.fromARGB(255, 84, 79, 79),
-                            iconSize: 28,
-                          ),
-                          IconButton(
-                            onPressed: () {},
-                            icon: const Icon(Icons.close),
-                            color: const Color.fromARGB(255, 84, 79, 79),
-                            iconSize: 28,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  const Padding(
-                    padding: EdgeInsets.only(left: 45),
-                    child: const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          'Turut prihatin',
-                          style: const TextStyle(color: Colors.black),
-                        ),
-                        SizedBox(height: 10),
-                        Row(
-                          children: const [
-                            Icon(
-                              Icons.favorite_outline,
-                              color: const Color.fromARGB(255, 84, 79, 79),
-                            ),
-                            SizedBox(width: 20),
-                            Icon(
-                              Icons.chat_bubble_outline,
-                              color: const Color.fromARGB(255, 84, 79, 79),
-                            ),
-                            SizedBox(width: 20),
-                            Icon(
-                              Icons.loop_outlined,
-                              color: const Color.fromARGB(255, 84, 79, 79),
-                            ),
-                            SizedBox(width: 20),
-                            Icon(
-                              Icons.share_outlined,
-                              color: const Color.fromARGB(255, 84, 79, 79),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Container(
-                    decoration: const BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(
-                          width: 1.0,
-                          color: Color.fromARGB(255, 84, 79, 79),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(10, 5, 5, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Row(
-                        children: [
-                          const CircleAvatar(
-                            radius: 20,
-                            backgroundColor: Colors.blue,
-                          ),
-                          const SizedBox(width: 5),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Andri',
-                                style: TextStyle(color: Colors.black),
-                              ),
-                              const Row(
-                                children: const [
-                                  Text(
-                                    '4Mg .',
-                                  ),
-                                  Text(
-                                    ' Berlangganan',
-                                    style: const TextStyle(color: Colors.red),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          IconButton(
-                            onPressed: () {},
-                            icon: const Icon(Icons.more_horiz),
-                            color: const Color.fromARGB(255, 84, 79, 79),
-                            iconSize: 28,
-                          ),
-                          IconButton(
-                            onPressed: () {},
-                            icon: const Icon(Icons.close),
-                            color: const Color.fromARGB(255, 84, 79, 79),
-                            iconSize: 28,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 5),
-                  const Padding(
-                    padding: EdgeInsets.only(left: 45),
-                    child: const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          'Semoga segera membaik',
-                          style: const TextStyle(color: Colors.black),
-                        ),
-                        SizedBox(height: 10),
-                        Row(
-                          children: const [
-                            Icon(
-                              Icons.favorite_outline,
-                              color: const Color.fromARGB(255, 84, 79, 79),
-                            ),
-                            SizedBox(width: 20),
-                            Icon(
-                              Icons.chat_bubble_outline,
-                              color: const Color.fromARGB(255, 84, 79, 79),
-                            ),
-                            SizedBox(width: 20),
-                            Icon(
-                              Icons.loop_outlined,
-                              color: const Color.fromARGB(255, 84, 79, 79),
-                            ),
-                            SizedBox(width: 20),
-                            Icon(
-                              Icons.share_outlined,
-                              color: const Color.fromARGB(255, 84, 79, 79),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  Container(
-                    decoration: const BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(
-                          width: 1.0,
-                          color: Color.fromARGB(255, 84, 79, 79),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(10, 5, 5, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Row(
-                        children: [
-                          const CircleAvatar(
-                            radius: 20,
-                            backgroundColor: Colors.green,
-                          ),
-                          const SizedBox(width: 5),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Cynta',
-                                style: TextStyle(color: Colors.black),
-                              ),
-                              const Row(
-                                children: const [
-                                  Text(
-                                    '4Mg .',
-                                  ),
-                                  Text(
-                                    ' Berlangganan',
-                                    style: const TextStyle(color: Colors.red),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          IconButton(
-                            onPressed: () {},
-                            icon: const Icon(Icons.more_horiz),
-                            color: const Color.fromARGB(255, 84, 79, 79),
-                            iconSize: 28,
-                          ),
-                          IconButton(
-                            onPressed: () {},
-                            icon: const Icon(Icons.close),
-                            color: const Color.fromARGB(255, 84, 79, 79),
-                            iconSize: 28,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 5),
-                  const Padding(
-                    padding: EdgeInsets.only(left: 45),
-                    child: const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          ':(',
-                          style: const TextStyle(color: Colors.black),
-                        ),
-                        SizedBox(height: 10),
-                        Row(
-                          children: const [
-                            Icon(
-                              Icons.favorite_outline,
-                              color: const Color.fromARGB(255, 84, 79, 79),
-                            ),
-                            SizedBox(width: 20),
-                            Icon(
-                              Icons.chat_bubble_outline,
-                              color: const Color.fromARGB(255, 84, 79, 79),
-                            ),
-                            SizedBox(width: 20),
-                            Icon(
-                              Icons.loop_outlined,
-                              color: const Color.fromARGB(255, 84, 79, 79),
-                            ),
-                            SizedBox(width: 20),
-                            Icon(
-                              Icons.share_outlined,
-                              color: const Color.fromARGB(255, 84, 79, 79),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  Container(
-                    decoration: const BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(
-                          width: 1.0,
-                          color: Color.fromARGB(255, 84, 79, 79),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            //  Container(
-            //   decoration: const BoxDecoration(
-            //     border: Border(
-            //       bottom: BorderSide(
-            //         width: 1.0,
-            //         color: Color.fromARGB(255, 84, 79, 79),
-            //       ),
-            //     ),
-            //   ),
-            // ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: Container(
-  
-        decoration: const BoxDecoration(
-          border: const Border(
-            top: const BorderSide(
-                color: const Color.fromARGB(255, 84, 79, 79), width: 1.0),
           ),
         ),
-        child: BottomAppBar(
-          color: Colors.white,
-          elevation: 0,
-          padding: EdgeInsets.zero,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        bottomNavigationBar: AppBottomNavigation(
+          currentIndex: 0,
+          onTap: (index) => AppNavigation.onTabSelected(context, index),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReplies() {
+    if (_comments.isEmpty) {
+      if (_isLoading) {
+        return const Padding(
+          padding: EdgeInsets.all(24),
+          child: Center(
+            child: SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+        );
+      }
+
+      if (_loadError != null) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
             children: [
-              buildHoverIcon(
-                defaultIcon: Icons.home_outlined,
-                hoveredIcon: Icons.home,
-                onPressed: () {},
-                label: 'Beranda',
+              Text(
+                _loadError!,
+                style: const TextStyle(color: AppColors.textSecondary),
               ),
+              TextButton(onPressed: _retry, child: const Text('Coba lagi')),
+            ],
+          ),
+        );
+      }
 
-              // 2. Chat / Gelembung
-              buildHoverIcon(
-                defaultIcon: Icons.menu_book_outlined,
-                hoveredIcon: Icons.menu_book_outlined,
-                onPressed: () {},
-                label: 'Bacaan',
-              ),
-              buildHoverIcon(
-                defaultIcon: Icons.headphones_outlined,
-                hoveredIcon: Icons.headphones_rounded,
-                onPressed: () {},
-                label: 'Podcast',
-              ),
+      return const Padding(
+        padding: EdgeInsets.all(24),
+        child: Center(
+          child: Text(
+            'Belum ada balasan.',
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
+        ),
+      );
+    }
 
-              buildHoverIcon(
-                defaultIcon: Icons.chat_bubble_outline,
-                hoveredIcon: Icons.chat_bubble,
-                onPressed: () {},
-                label: 'Obrolan',
-              ),
+    return Column(
+      children: [
+        for (final comment in _comments) _ReplyTile(comment: comment),
+      ],
+    );
+  }
+}
 
-              // 4. Notification
-              buildHoverIcon(
-                defaultIcon: Icons.notifications_none_outlined,
-                hoveredIcon: Icons.notifications,
+class _ReplyTile extends StatelessWidget {
+  final Comment comment;
+
+  const _ReplyTile({required this.comment});
+
+  @override
+  Widget build(BuildContext context) {
+    final name = comment.username ?? comment.authorName ?? 'Pengguna';
+    final time = formatPostTime(comment.createdAt);
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 8, 5, 8),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(width: 1.0, color: _lineColor)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              PersonAvatar(
+                name: name,
+                imageUrl: comment.authorAvatarUrl,
+                radius: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(color: Colors.black),
+                    ),
+                    Row(
+                      children: [
+                        if (time.isNotEmpty) Text('$time ·'),
+                        const Text(
+                          ' Berlangganan',
+                          style: TextStyle(color: AppColors.primary),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
                 onPressed: () {},
-                label: 'aktivitas',
+                icon: const Icon(Icons.more_horiz),
+                color: _lineColor,
+                iconSize: 28,
+              ),
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(Icons.close),
+                color: _lineColor,
+                iconSize: 28,
               ),
             ],
           ),
-        ),
+          Padding(
+            padding: const EdgeInsets.only(left: 48, right: 8, bottom: 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  comment.content,
+                  style: const TextStyle(color: Colors.black),
+                ),
+                const SizedBox(height: 10),
+                const Row(
+                  children: [
+                    Icon(Icons.favorite_outline, color: _lineColor),
+                    SizedBox(width: 20),
+                    Icon(Icons.chat_bubble_outline, color: _lineColor),
+                    SizedBox(width: 20),
+                    Icon(Icons.loop_outlined, color: _lineColor),
+                    SizedBox(width: 20),
+                    Icon(Icons.share_outlined, color: _lineColor),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1,7 +1,6 @@
-
 import 'package:flutter/material.dart';
-
 import '../core/theme/app_colors.dart';
+import 'current_user_avatar.dart';
 
 class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onSearchTap;
@@ -57,15 +56,7 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
           padding: const EdgeInsets.only(left: 4, right: 16),
           child: GestureDetector(
             onTap: onProfileTap,
-            child: const CircleAvatar(
-              radius: 16,
-              backgroundColor: Color(0xFFE6E6E6),
-              child: Icon(
-                Icons.person,
-                size: 21,
-                color: Color(0xFF777777),
-              ),
-            ),
+            child: const CurrentUserAvatar(radius: 16),
           ),
         ),
       ],

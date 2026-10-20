@@ -1,3 +1,5 @@
+import 'comment.dart';
+
 class Post {
   final int id;
   final int userId;
@@ -9,14 +11,21 @@ class Post {
   final String status;
   final String? authorName;
   final String? username;
+  final String? authorAvatarUrl;
   final String? publicationName;
   final String? restackedBy;
-  final int likesCount;
-  final int commentsCount;
-  final int restacksCount;
   final DateTime? publishedAt;
+  final List<Comment> comments;
 
-  const Post({
+  // Bisa berubah saat user like, restack, atau membalas, supaya Home dan
+  // halaman detail memakai angka yang sama tanpa memuat ulang daftar.
+  int likesCount;
+  int commentsCount;
+  int restacksCount;
+  bool likedByMe;
+  bool restackedByMe;
+
+  Post({
     required this.id,
     required this.userId,
     this.publicationId,
@@ -27,12 +36,16 @@ class Post {
     this.status = 'published',
     this.authorName,
     this.username,
+    this.authorAvatarUrl,
     this.publicationName,
     this.restackedBy,
+    this.publishedAt,
+    this.comments = const [],
     this.likesCount = 0,
     this.commentsCount = 0,
     this.restacksCount = 0,
-    this.publishedAt,
+    this.likedByMe = false,
+    this.restackedByMe = false,
   });
 
   factory Post.fromJson(Map<String, dynamic> json) {
@@ -73,14 +86,29 @@ class Post {
       status: json['status'] as String? ?? 'published',
       authorName: user['name'] as String?,
       username: user['username'] as String?,
+      authorAvatarUrl: user['avatar_url'] as String?,
       publicationName: publication['name'] as String?,
       restackedBy: restackerName,
       likesCount: (json['likes_count'] as num?)?.toInt() ?? 0,
       commentsCount: (json['comments_count'] as num?)?.toInt() ?? 0,
       restacksCount: (json['restacks_count'] as num?)?.toInt() ?? 0,
+      likedByMe: _asBool(json['liked_by_me']),
+      restackedByMe: _asBool(json['restacked_by_me']),
+      comments: _parseComments(json['comments']),
       publishedAt: json['published_at'] == null
           ? null
           : DateTime.tryParse(json['published_at'] as String),
     );
   }
+}
+
+bool _asBool(dynamic value) => value == true || value == 1 || value == '1';
+
+List<Comment> _parseComments(dynamic value) {
+  if (value is! List) return const [];
+
+  return value
+      .whereType<Map>()
+      .map((item) => Comment.fromJson(Map<String, dynamic>.from(item)))
+      .toList();
 }

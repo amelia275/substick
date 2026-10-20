@@ -16,27 +16,27 @@ class AppBottomNavigation extends StatelessWidget {
     _NavItem(
       icon: Icons.home_outlined,
       activeIcon: Icons.home,
-      label: 'Home',
+      label: 'Beranda',
     ),
     _NavItem(
       icon: Icons.menu_book_outlined,
       activeIcon: Icons.menu_book,
-      label: 'Read',
+      label: 'Bacaan',
     ),
     _NavItem(
       icon: Icons.podcasts_outlined,
       activeIcon: Icons.podcasts,
-      label: 'Podcasts',
+      label: 'Podcast',
     ),
     _NavItem(
       icon: Icons.chat_bubble_outline,
       activeIcon: Icons.chat_bubble,
-      label: 'Chat',
+      label: 'Obrolan',
     ),
     _NavItem(
       icon: Icons.notifications_none,
       activeIcon: Icons.notifications,
-      label: 'Activity',
+      label: 'Aktivitas',
     ),
   ];
 
@@ -79,7 +79,7 @@ class AppBottomNavigation extends StatelessWidget {
                         item.label,
                         maxLines: 1,
                         style: TextStyle(
-                          fontSize: 10,
+                          fontSize: 11,
                           height: 1.2,
                           fontWeight: isSelected
                               ? FontWeight.w600

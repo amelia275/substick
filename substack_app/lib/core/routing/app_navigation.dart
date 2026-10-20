@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class AppNavigation {
   static const List<String> routes = [
-    '/',
+    '/home',
     '/read',
     '/podcast',
     '/chat',
