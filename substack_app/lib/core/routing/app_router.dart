@@ -6,11 +6,11 @@ import '../../features/auth/register_screen.dart';
 import '../../features/auth/splash_screen.dart';
 import '../../features/auth/welcome_screen.dart';
 import '../../features/chat/chat_list_screen.dart';
+import '../../features/compose/compose_note_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/podcast/podcast_screen.dart';
-import '../../features/read/read_screen.dart';
-import '../../features/compose/compose_note_screen.dart';
 import '../../features/profile/profile_screen.dart';
+import '../../features/read/read_screen.dart';
 
 class AppRouter {
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {

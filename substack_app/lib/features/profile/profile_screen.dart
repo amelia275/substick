@@ -1,87 +1,229 @@
 import 'package:flutter/material.dart';
 
+import '../../core/constants/app_constants.dart';
+import '../../models/post.dart';
+import '../../models/user_profile.dart';
+import '../../services/user_service.dart';
+import '../../widgets/user_avatar.dart';
+
 const _orange = Color(0xFFFF6719);
 const _grey = Color(0xFFF0F0F0);
 const _greyDark = Color(0xFFE4E4E4);
 const _greyText = Color(0xFF8A8A8A);
 
-// Data dummy, nanti diganti data dari API
-const _name = 'Kanalika';
-const _username = '@heynana';
-const _bio = 'better to speak';
-const _linkCount = 1;
-const _subscriptions = ['The Greatest Note', 'The Substack Post'];
+// Warna kartu dipilih dari id post supaya konsisten tiap dibuka
+const _cardColors = [
+  Color(0xFF244338),
+  Color(0xFF3B4435),
+  Color(0xFF333333),
+  Color(0xFF4A3B2E),
+  Color(0xFF6B4A38),
+];
 
-class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+Color _cardColor(Post post) => _cardColors[post.id % _cardColors.length];
+
+String _timeAgo(DateTime? date) {
+  if (date == null) return '';
+  final diff = DateTime.now().difference(date.toLocal());
+
+  if (diff.inMinutes < 1) return 'now';
+  if (diff.inHours < 1) return '${diff.inMinutes}m';
+  if (diff.inDays < 1) return '${diff.inHours}h';
+  if (diff.inDays < 7) return '${diff.inDays}d';
+  if (diff.inDays < 30) return '${(diff.inDays / 7).floor()}w';
+  if (diff.inDays < 365) return '${(diff.inDays / 30).floor()}mo';
+  return '${(diff.inDays / 365).floor()}y';
+}
+
+String _fmt(int n) {
+  if (n >= 1000) {
+    final v = (n / 1000).toStringAsFixed(1);
+    return '${v.endsWith('.0') ? v.substring(0, v.length - 2) : v}k';
+  }
+  return '$n';
+}
+
+class ProfileScreen extends StatefulWidget {
+  const ProfileScreen({super.key, this.userId = AppConstants.currentUserId});
+
+  final int userId;
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  final UserService _userService = UserService();
+  late Future<UserProfile> _profileFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _profileFuture = _userService.fetchProfile(widget.userId);
+  }
+
+  void _reload() {
+    setState(() {
+      _profileFuture = _userService.fetchProfile(widget.userId);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.maybePop(context),
+        ),
+        actions: [
+          IconButton(icon: const Icon(Icons.search), onPressed: () {}),
+          IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
+        ],
+      ),
+      body: FutureBuilder<UserProfile>(
+        future: _profileFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Center(
+              child: CircularProgressIndicator(color: _orange),
+            );
+          }
+          if (snapshot.hasError || snapshot.data == null) {
+            return _ErrorState(onRetry: _reload);
+          }
+          return _ProfileContent(profile: snapshot.data!);
+        },
+      ),
+    );
+  }
+}
+
+class _ProfileContent extends StatelessWidget {
+  const _ProfileContent({required this.profile});
+
+  final UserProfile profile;
+
+  @override
+  Widget build(BuildContext context) {
+    final likedIds = profile.likes.map((p) => p.id).toSet();
+    final name = profile.user.name;
+
     return DefaultTabController(
       length: 5,
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.maybePop(context),
-          ),
-          actions: [
-            IconButton(icon: const Icon(Icons.search), onPressed: () {}),
-            IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
-          ],
-        ),
-        body: NestedScrollView(
-          headerSliverBuilder: (context, _) => [
-            const SliverToBoxAdapter(child: _ProfileHeader()),
-            SliverAppBar(
-              primary: false,
-              pinned: true,
-              toolbarHeight: 0,
-              backgroundColor: Colors.white,
-              elevation: 0,
-              scrolledUnderElevation: 0,
-              automaticallyImplyLeading: false,
-              bottom: const TabBar(
-                isScrollable: true,
-                tabAlignment: TabAlignment.start,
-                labelColor: Colors.black87,
-                unselectedLabelColor: _greyText,
-                indicatorColor: Colors.black87,
-                dividerColor: Color(0xFFE0E0E0),
-                overlayColor: WidgetStatePropertyAll(Colors.transparent),
-                labelStyle:
-                    TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-                unselectedLabelStyle: TextStyle(fontSize: 16),
-                tabs: [
-                  Tab(text: 'Activity'),
-                  Tab(text: 'Posts'),
-                  Tab(text: 'Replies'),
-                  Tab(text: 'Likes'),
-                  Tab(text: 'Subscriptions'),
-                ],
-              ),
+      child: NestedScrollView(
+        headerSliverBuilder: (context, _) => [
+          SliverToBoxAdapter(child: _ProfileHeader(profile: profile)),
+          SliverAppBar(
+            primary: false,
+            pinned: true,
+            toolbarHeight: 0,
+            backgroundColor: Colors.white,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            automaticallyImplyLeading: false,
+            bottom: const TabBar(
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
+              labelColor: Colors.black87,
+              unselectedLabelColor: _greyText,
+              indicatorColor: Colors.black87,
+              dividerColor: Color(0xFFE0E0E0),
+              overlayColor: WidgetStatePropertyAll(Colors.transparent),
+              labelStyle: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+              unselectedLabelStyle: TextStyle(fontSize: 16),
+              tabs: [
+                Tab(text: 'Activity'),
+                Tab(text: 'Posts'),
+                Tab(text: 'Replies'),
+                Tab(text: 'Likes'),
+                Tab(text: 'Subscriptions'),
+              ],
             ),
-          ],
-          body: const TabBarView(
-            children: [
-              _ActivityTab(),
-              _EmptyState(
-                icon: Icons.description_outlined,
-                title: 'No posts yet',
-                subtitle: 'Your posts will appear here',
-              ),
-              _EmptyState(
-                icon: Icons.library_books_outlined,
-                title: 'No replies yet',
-                subtitle: 'Your replies will appear here',
-              ),
-              _LikesTab(),
-              _SubscriptionsTab(),
-            ],
           ),
+        ],
+        body: TabBarView(
+          children: [
+            // Activity: postingan sendiri + restack
+            profile.activity.isEmpty
+                ? const _EmptyState(
+                    icon: Icons.bolt_outlined,
+                    title: 'No activity yet',
+                    subtitle: 'Your activity will appear here',
+                  )
+                : _PostList(
+                    itemCount: profile.activity.length,
+                    itemBuilder: (i) {
+                      final item = profile.activity[i];
+                      return _PostTile(
+                        post: item.post,
+                        liked: likedIds.contains(item.post.id),
+                        at: item.at,
+                        label: item.isRestack ? '$name restacked' : null,
+                        labelIcon: Icons.repeat,
+                      );
+                    },
+                  ),
+
+            // Posts
+            profile.posts.isEmpty
+                ? const _EmptyState(
+                    icon: Icons.description_outlined,
+                    title: 'No posts yet',
+                    subtitle: 'Your posts will appear here',
+                  )
+                : _PostList(
+                    itemCount: profile.posts.length,
+                    itemBuilder: (i) => _PostTile(
+                      post: profile.posts[i],
+                      liked: likedIds.contains(profile.posts[i].id),
+                    ),
+                  ),
+
+            // Replies
+            profile.replies.isEmpty
+                ? const _EmptyState(
+                    icon: Icons.library_books_outlined,
+                    title: 'No replies yet',
+                    subtitle: 'Your replies will appear here',
+                  )
+                : _PostList(
+                    itemCount: profile.replies.length,
+                    itemBuilder: (i) => _ReplyTile(
+                      reply: profile.replies[i],
+                      profile: profile,
+                    ),
+                  ),
+
+            // Likes
+            profile.likes.isEmpty
+                ? const _EmptyState(
+                    icon: Icons.favorite_border,
+                    title: 'No likes yet',
+                    subtitle: 'Posts you like will appear here',
+                  )
+                : _PostList(
+                    itemCount: profile.likes.length,
+                    itemBuilder: (i) => _PostTile(
+                      post: profile.likes[i],
+                      liked: true,
+                      label: '$name liked',
+                      labelIcon: Icons.favorite,
+                    ),
+                  ),
+
+            // Subscriptions
+            profile.subscriptions.isEmpty
+                ? const _EmptyState(
+                    icon: Icons.mail_outline,
+                    title: 'No subscriptions yet',
+                    subtitle: 'Publications you join will appear here',
+                  )
+                : _SubscriptionsTab(items: profile.subscriptions),
+          ],
         ),
       ),
     );
@@ -89,10 +231,15 @@ class ProfileScreen extends StatelessWidget {
 }
 
 class _ProfileHeader extends StatelessWidget {
-  const _ProfileHeader();
+  const _ProfileHeader({required this.profile});
+
+  final UserProfile profile;
 
   @override
   Widget build(BuildContext context) {
+    final user = profile.user;
+    final bio = user.bio;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
       child: Column(
@@ -101,40 +248,34 @@ class _ProfileHeader extends StatelessWidget {
           // Nama, username, foto
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _name,
-                      style:
-                          TextStyle(fontSize: 32, fontWeight: FontWeight.w800),
+                      user.name,
+                      style: const TextStyle(
+                          fontSize: 32, fontWeight: FontWeight.w800),
                     ),
-                    SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Text(_username,
-                            style: TextStyle(fontSize: 16, color: _greyText)),
-                        Text(' · ',
-                            style: TextStyle(fontSize: 16, color: _greyText)),
-                        Icon(Icons.link, size: 18, color: _greyText),
-                        SizedBox(width: 2),
-                        Text('$_linkCount',
-                            style: TextStyle(fontSize: 16, color: _greyText)),
-                      ],
+                    const SizedBox(height: 4),
+                    Text(
+                      '@${user.username} · ${profile.postsCount} posts',
+                      style: const TextStyle(fontSize: 16, color: _greyText),
                     ),
                   ],
                 ),
               ),
-              const CircleAvatar(
-                radius: 42,
-                backgroundColor: _grey,
-                child: Icon(Icons.person, size: 40, color: _greyText),
+              UserAvatar(
+                size: 84,
+                name: user.name,
+                imageUrl: user.avatarUrl,
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          const Text(_bio, style: TextStyle(fontSize: 16, height: 1.4)),
+          if (bio != null && bio.trim().isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Text(bio, style: const TextStyle(fontSize: 16, height: 1.4)),
+          ],
           const SizedBox(height: 16),
 
           // Add recommendation
@@ -154,8 +295,8 @@ class _ProfileHeader extends StatelessWidget {
           const SizedBox(height: 12),
 
           // See subscribers
-          Row(
-            children: const [
+          const Row(
+            children: [
               CircleAvatar(
                 radius: 14,
                 backgroundColor: _greyDark,
@@ -248,201 +389,151 @@ class _ProfileHeader extends StatelessWidget {
   }
 }
 
-enum _ActivityType { note, restack }
+class _PostList extends StatelessWidget {
+  const _PostList({required this.itemCount, required this.itemBuilder});
 
-class _ActivityItem {
-  const _ActivityItem({
-    required this.type,
-    required this.author,
-    required this.time,
-    this.text,
-    this.quote,
-    this.quoteSource,
-    this.pub,
-    this.title,
-    this.subtitle,
-    this.snippet,
-    this.cardColor = const Color(0xFF3B4435),
-    this.likes = 0,
-    this.comments = 0,
-    this.restacks = 0,
-    this.liked = false,
-  });
-
-  final _ActivityType type;
-  final String author;
-  final String time;
-  final String? text; // teks catatan di atas kartu (opsional)
-  final String? quote; // isi kartu kutipan (kalau diisi, tampil kartu kutipan)
-  final String? quoteSource;
-  final String? pub; // nama publikasi (kartu artikel)
-  final String? title;
-  final String? subtitle;
-  final String? snippet;
-  final Color cardColor;
-  final int likes;
-  final int comments;
-  final int restacks;
-  final bool liked;
-}
-
-// Data dummy, nanti diganti data dari API
-const _activities = [
-  _ActivityItem(
-    type: _ActivityType.note,
-    author: _name,
-    time: '1mo',
-    text: 'Well written!',
-    pub: 'BUMANTARA J',
-    title: 'Sampai Kapan Kau Diam di Kepala?',
-    subtitle:
-        'Tentang seorang anak yang takut kehilangan dirinya sendiri, kelak saat menyentuh umur 20-an',
-    snippet:
-        'Aku sering merasa hidupku terlalu cepat untuk memikirkan segalanya, entah kapan terjadinya...',
-    cardColor: Color(0xFF244338),
-    likes: 12,
-    comments: 2,
-    restacks: 1,
-    liked: true,
-  ),
-  _ActivityItem(
-    type: _ActivityType.note,
-    author: _name,
-    time: '2mo',
-    text: 'Relateable :(',
-    quote: 'Biarkan sebagian hal berjalan apa adanya.',
-    quoteSource: 'cam.',
-    cardColor: Color(0xFF3B4435),
-  ),
-  _ActivityItem(
-    type: _ActivityType.restack,
-    author: 'Priscilla',
-    time: '3mo',
-    pub: 'YOURS TRULY',
-    title:
-        'Orang Bilang Tanah Kita Tanah Surga, Tapi Hasil Buminya Entah Kemana',
-    subtitle: 'Apakah kalian pernah berpikir sedemikian rupa?',
-    snippet:
-        'Sejak mula kita dicekoki dogma yang sama, dilantunkan di pelataran maktab hingga menjelma liturgi...',
-    cardColor: Color(0xFF333333),
-    likes: 69,
-    comments: 14,
-    restacks: 27,
-    liked: true,
-  ),
-  _ActivityItem(
-    type: _ActivityType.restack,
-    author: 'Ismail bin Mail',
-    time: '4mo',
-    pub: 'MAIL TK B',
-    title: 'Catatan Kecil dari Kamar Kos',
-    subtitle: 'Hal-hal sederhana yang ternyata penting.',
-    snippet: 'Sebelum kita mulai, satu hal perlu diluruskan...',
-    cardColor: Color(0xFF4A3B2E),
-  ),
-];
-
-class _ActivityTab extends StatelessWidget {
-  const _ActivityTab();
+  final int itemCount;
+  final Widget Function(int index) itemBuilder;
 
   @override
   Widget build(BuildContext context) {
     return ListView.separated(
-      itemCount: _activities.length,
+      itemCount: itemCount,
       separatorBuilder: (_, __) => Container(height: 8, color: _grey),
-      itemBuilder: (_, i) => _ActivityCard(item: _activities[i]),
+      itemBuilder: (_, i) => itemBuilder(i),
     );
   }
 }
 
-class _ActivityCard extends StatelessWidget {
-  const _ActivityCard({required this.item});
+/// Satu post (note / quote / article) lengkap dengan penulis dan aksi.
+class _PostTile extends StatelessWidget {
+  const _PostTile({
+    required this.post,
+    required this.liked,
+    this.at,
+    this.label,
+    this.labelIcon,
+  });
 
-  final _ActivityItem item;
+  final Post post;
+  final bool liked;
+  final DateTime? at;
+  final String? label; // contoh: "Amelia restacked"
+  final IconData? labelIcon;
 
   @override
   Widget build(BuildContext context) {
-    final isRestack = item.type == _ActivityType.restack;
-
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (isRestack) ...[
+          if (label != null) ...[
             Row(
-              children: const [
-                Icon(Icons.repeat, size: 20, color: _greyText),
-                SizedBox(width: 10),
-                Text('$_name restacked',
-                    style: TextStyle(fontSize: 16, color: _greyText)),
+              children: [
+                Icon(labelIcon, size: 20, color: _greyText),
+                const SizedBox(width: 10),
+                Text(label!,
+                    style: const TextStyle(fontSize: 16, color: _greyText)),
               ],
             ),
             const SizedBox(height: 12),
           ],
-
-          // Baris penulis
           Row(
             children: [
-              const CircleAvatar(
-                radius: 20,
-                backgroundColor: _grey,
-                child: Icon(Icons.person, color: _greyText),
-              ),
+              UserAvatar(size: 40, name: post.authorName),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(item.author,
+                    Text(post.authorName ?? '',
                         style: const TextStyle(
                             fontSize: 18, fontWeight: FontWeight.w700)),
-                    Row(
-                      children: [
-                        Text(item.time,
-                            style: const TextStyle(color: _greyText)),
-                        if (isRestack) ...const [
-                          Text('  •  ', style: TextStyle(color: _greyText)),
-                          Text('Subscribe', style: TextStyle(color: _orange)),
-                        ],
-                      ],
-                    ),
+                    Text(_timeAgo(at ?? post.publishedAt),
+                        style: const TextStyle(color: _greyText)),
                   ],
                 ),
               ),
               const Icon(Icons.more_horiz, color: _greyText),
-              if (isRestack) ...const [
-                SizedBox(width: 12),
-                Icon(Icons.close, color: _greyText),
-              ],
             ],
           ),
-
-          // Teks catatan (opsional)
-          if (item.text != null) ...[
-            const SizedBox(height: 12),
-            Text(item.text!, style: const TextStyle(fontSize: 18, height: 1.4)),
-          ],
           const SizedBox(height: 12),
-
-          // Kartu: kutipan atau artikel
-          if (item.quote != null)
-            _QuoteCard(item: item)
-          else
-            _ArticleCard(item: item),
+          _PostBody(post: post),
           const SizedBox(height: 12),
-
-          _ActionBar(item: item),
+          Row(
+            children: [
+              _Action(
+                icon: liked ? Icons.favorite : Icons.favorite_border,
+                count: post.likesCount,
+                active: liked,
+              ),
+              const SizedBox(width: 24),
+              _Action(
+                  icon: Icons.chat_bubble_outline, count: post.commentsCount),
+              const SizedBox(width: 24),
+              _Action(icon: Icons.repeat, count: post.restacksCount),
+              const SizedBox(width: 24),
+              const Icon(Icons.share_outlined, color: _greyText),
+            ],
+          ),
         ],
       ),
     );
   }
 }
 
-class _QuoteCard extends StatelessWidget {
-  const _QuoteCard({required this.item});
+class _PostBody extends StatelessWidget {
+  const _PostBody({required this.post});
 
-  final _ActivityItem item;
+  final Post post;
+
+  @override
+  Widget build(BuildContext context) {
+    switch (post.type) {
+      case 'quote':
+        return _QuoteCard(
+          quote: post.content,
+          source: post.publicationName ?? post.authorName ?? '',
+          color: _cardColor(post),
+        );
+      case 'article':
+        return _ArticleCard(post: post);
+      default:
+        // Note: teks biasa, gambar kalau ada
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(post.content,
+                style: const TextStyle(fontSize: 18, height: 1.4)),
+            if (post.imageUrl != null && post.imageUrl!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.network(
+                  post.imageUrl!,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                ),
+              ),
+            ],
+          ],
+        );
+    }
+  }
+}
+
+class _QuoteCard extends StatelessWidget {
+  const _QuoteCard({
+    required this.quote,
+    required this.source,
+    required this.color,
+  });
+
+  final String quote;
+  final String source;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -450,7 +541,7 @@ class _QuoteCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: item.cardColor,
+        color: color,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -459,7 +550,7 @@ class _QuoteCard extends StatelessWidget {
           const Icon(Icons.format_quote, size: 32, color: Colors.white),
           const SizedBox(height: 8),
           Text(
-            item.quote!,
+            quote,
             style: const TextStyle(
                 fontFamily: 'Georgia',
                 fontSize: 22,
@@ -470,7 +561,7 @@ class _QuoteCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(item.quoteSource ?? '',
+                child: Text(source,
                     style: const TextStyle(color: Colors.white, fontSize: 16)),
               ),
               const Icon(Icons.bookmark_border, color: Colors.white),
@@ -483,28 +574,30 @@ class _QuoteCard extends StatelessWidget {
 }
 
 class _ArticleCard extends StatelessWidget {
-  const _ArticleCard({required this.item});
+  const _ArticleCard({required this.post});
 
-  final _ActivityItem item;
+  final Post post;
 
   @override
   Widget build(BuildContext context) {
+    final hasCover = post.imageUrl != null && post.imageUrl!.isNotEmpty;
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: Container(
         width: double.infinity,
-        color: item.cardColor,
+        color: _cardColor(post),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Placeholder gambar sampul
-            Container(
-              height: 160,
-              width: double.infinity,
-              color: Colors.white24,
-              child: const Icon(Icons.image_outlined,
-                  size: 48, color: Colors.white54),
-            ),
+            if (hasCover)
+              Image.network(
+                post.imageUrl!,
+                height: 160,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              ),
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -515,26 +608,29 @@ class _ArticleCard extends StatelessWidget {
                       const CircleAvatar(
                           radius: 12, backgroundColor: Colors.white24),
                       const SizedBox(width: 8),
-                      Text(item.pub ?? '',
+                      Expanded(
+                        child: Text(
+                          post.publicationName ?? post.authorName ?? '',
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                               color: Colors.white70,
                               fontSize: 14,
-                              fontWeight: FontWeight.w700)),
+                              fontWeight: FontWeight.w700),
+                        ),
+                      ),
                     ],
                   ),
+                  if (post.title != null && post.title!.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Text(post.title!,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            height: 1.3)),
+                  ],
                   const SizedBox(height: 12),
-                  Text(item.title ?? '',
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          height: 1.3)),
-                  const SizedBox(height: 8),
-                  Text(item.subtitle ?? '',
-                      style:
-                          const TextStyle(color: Colors.white70, fontSize: 16)),
-                  const SizedBox(height: 12),
-                  Text(item.snippet ?? '',
+                  Text(post.content,
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                       style:
@@ -552,39 +648,6 @@ class _ArticleCard extends StatelessWidget {
       ),
     );
   }
-}
-
-class _ActionBar extends StatelessWidget {
-  const _ActionBar({required this.item});
-
-  final _ActivityItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        _Action(
-          icon: item.liked ? Icons.favorite : Icons.favorite_border,
-          count: item.likes,
-          active: item.liked,
-        ),
-        const SizedBox(width: 24),
-        _Action(icon: Icons.chat_bubble_outline, count: item.comments),
-        const SizedBox(width: 24),
-        _Action(icon: Icons.repeat, count: item.restacks),
-        const SizedBox(width: 24),
-        const Icon(Icons.share_outlined, color: _greyText),
-      ],
-    );
-  }
-}
-
-String _fmt(int n) {
-  if (n >= 1000) {
-    final v = (n / 1000).toStringAsFixed(1);
-    return '${v.endsWith('.0') ? v.substring(0, v.length - 2) : v}k';
-  }
-  return '$n';
 }
 
 class _Action extends StatelessWidget {
@@ -609,153 +672,50 @@ class _Action extends StatelessWidget {
   }
 }
 
-// Data dummy, nanti diganti data dari API
-const _likedPosts = [
-  _ActivityItem(
-    type: _ActivityType.note,
-    author: 'Kino',
-    time: '4d',
-    text: 'Bacaan hari ini, saya rekomendasikan untuk teman-teman.',
-    pub: 'AKSARA M',
-    title: 'Paksa Iblis Turun Dari Kursi',
-    subtitle: 'Apa yang anda pikirkan perihal menafsir lirik lagu?',
-    snippet:
-        'Tak saya sangka, ada secarik lirik lagu yang menyita waktu saya, hanya untuk berpikir sejenak...',
-    cardColor: Color(0xFF6B4A38),
-    likes: 2300,
-    restacks: 660,
-    liked: true,
-  ),
-  _ActivityItem(
-    type: _ActivityType.note,
-    author: 'isaya',
-    time: '3w',
-    text: 'Menulis itu tidak perlu sempurna.\n\nTulis saja dulu.',
-    likes: 22000,
-    comments: 215,
-    restacks: 2900,
-    liked: true,
-  ),
-  _ActivityItem(
-    type: _ActivityType.note,
-    author: 'Audrey Z',
-    time: '1w',
-    text: 'Terkadang, tulisan yang jujur lebih berharga daripada yang rapi.',
-    likes: 2200,
-    comments: 22,
-    restacks: 348,
-    liked: true,
-  ),
-  _ActivityItem(
-    type: _ActivityType.note,
-    author: 'Auryn Lenggana',
-    time: '1mo',
-    pub: 'AURRRYYYY',
-    title: 'Catatan dari Pinggir Kota',
-    subtitle: 'Cerita kecil tentang hal-hal yang sering terlewat.',
-    snippet: 'Mari Bercerita.',
-    cardColor: Color(0xFF244338),
-    likes: 2600,
-    restacks: 925,
-    liked: true,
-  ),
-];
+class _ReplyTile extends StatelessWidget {
+  const _ReplyTile({required this.reply, required this.profile});
 
-class _LikesTab extends StatelessWidget {
-  const _LikesTab();
+  final ProfileReply reply;
+  final UserProfile profile;
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
-      itemCount: _likedPosts.length,
-      separatorBuilder: (_, __) => const Divider(
-          height: 1, indent: 16, endIndent: 16, color: Color(0xFFE0E0E0)),
-      itemBuilder: (_, i) => _LikedPost(item: _likedPosts[i]),
-    );
-  }
-}
+    final parentAuthor = reply.post?.authorName;
 
-class _LikedPost extends StatelessWidget {
-  const _LikedPost({required this.item});
-
-  final _ActivityItem item;
-
-  @override
-  Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Baris "... liked"
           Row(
             children: [
-              const Icon(Icons.favorite, size: 20, color: _greyText),
-              const SizedBox(width: 10),
-              Text('$_name liked',
-                  style: const TextStyle(fontSize: 16, color: _greyText)),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const CircleAvatar(
-                radius: 24,
-                backgroundColor: _grey,
-                child: Icon(Icons.person, color: _greyText),
+              UserAvatar(
+                size: 40,
+                name: profile.user.name,
+                imageUrl: profile.user.avatarUrl,
               ),
               const SizedBox(width: 12),
-              // Semua konten menjorok sejajar dengan nama
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(item.author,
-                                  style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w700)),
-                              Row(
-                                children: [
-                                  Text(item.time,
-                                      style: const TextStyle(color: _greyText)),
-                                  const Text('  •  ',
-                                      style: TextStyle(color: _greyText)),
-                                  const Text('Subscribe',
-                                      style: TextStyle(color: _orange)),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Icon(Icons.more_horiz, color: _greyText),
-                        const SizedBox(width: 12),
-                        const Icon(Icons.close, color: _greyText),
-                      ],
+                    Text(profile.user.name,
+                        style: const TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.w700)),
+                    Text(
+                      parentAuthor == null
+                          ? _timeAgo(reply.createdAt)
+                          : '${_timeAgo(reply.createdAt)}  •  Replying to $parentAuthor',
+                      style: const TextStyle(color: _greyText),
                     ),
-                    if (item.text != null) ...[
-                      const SizedBox(height: 8),
-                      Text(item.text!,
-                          style: const TextStyle(fontSize: 18, height: 1.4)),
-                    ],
-                    if (item.title != null) ...[
-                      const SizedBox(height: 12),
-                      _ArticleCard(item: item),
-                    ],
-                    const SizedBox(height: 12),
-                    _ActionBar(item: item),
                   ],
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          Text(reply.content,
+              style: const TextStyle(fontSize: 18, height: 1.4)),
         ],
       ),
     );
@@ -763,27 +723,51 @@ class _LikedPost extends StatelessWidget {
 }
 
 class _SubscriptionsTab extends StatelessWidget {
-  const _SubscriptionsTab();
+  const _SubscriptionsTab({required this.items});
+
+  final List<ProfileSubscription> items;
 
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: _subscriptions.length,
-      itemBuilder: (context, i) => ListTile(
-        leading: Container(
-          width: 52,
-          height: 52,
-          decoration: BoxDecoration(
-            color: _grey,
+      itemCount: items.length,
+      itemBuilder: (context, i) {
+        final item = items[i];
+        final hasLogo = item.logoUrl != null && item.logoUrl!.isNotEmpty;
+
+        return ListTile(
+          leading: ClipRRect(
             borderRadius: BorderRadius.circular(8),
+            child: Container(
+              width: 52,
+              height: 52,
+              color: _grey,
+              alignment: Alignment.center,
+              child: hasLogo
+                  ? Image.network(
+                      item.logoUrl!,
+                      width: 52,
+                      height: 52,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    )
+                  : Text(
+                      item.name.isEmpty ? '?' : item.name[0].toUpperCase(),
+                      style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: _greyText),
+                    ),
+            ),
           ),
-        ),
-        title: Text(_subscriptions[i],
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-        subtitle: const Text('Free Subscriber',
-            style: TextStyle(fontSize: 16, color: _greyText)),
-      ),
+          title: Text(item.name,
+              style:
+                  const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+          subtitle: Text(item.isOwner ? 'Owner' : 'Free Subscriber',
+              style: const TextStyle(fontSize: 16, color: _greyText)),
+        );
+      },
     );
   }
 }
@@ -813,6 +797,36 @@ class _EmptyState extends StatelessWidget {
           const SizedBox(height: 4),
           Text(subtitle,
               style: const TextStyle(fontSize: 16, color: _greyText)),
+        ],
+      ),
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.error_outline, size: 40, color: _greyText),
+          const SizedBox(height: 12),
+          const Text('Gagal memuat profil',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          const Text('Pastikan server Laravel sedang berjalan',
+              style: TextStyle(fontSize: 14, color: _greyText)),
+          const SizedBox(height: 16),
+          FilledButton(
+            onPressed: onRetry,
+            style: FilledButton.styleFrom(backgroundColor: _orange),
+            child: const Text('Coba lagi'),
+          ),
         ],
       ),
     );

@@ -3,9 +3,11 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\PodcastController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\PostInteractionController;
 use App\Http\Controllers\Api\ReadController;
+use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register']);
@@ -14,6 +16,9 @@ Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10
 Route::get('/posts', [PostController::class, 'index']);
 Route::get('/posts/{id}', [PostController::class, 'show']);
 Route::get('/read', [ReadController::class, 'index']);
+Route::get('/podcasts', [PodcastController::class, 'index']);
+Route::get('/podcasts/{id}/episodes', [PodcastController::class, 'episodes']);
+Route::get('/users/{id}', [UserController::class, 'show']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);

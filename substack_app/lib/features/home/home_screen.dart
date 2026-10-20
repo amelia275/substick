@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
+import '../../core/network/api_exception.dart';
 import '../../core/routing/app_navigation.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
+import '../../models/comment.dart';
 import '../../models/post.dart';
+import '../../services/interaction_service.dart';
 import '../../services/post_service.dart';
 import '../../state/current_user_state.dart';
 import '../../widgets/app_bottom_navigation.dart';
 import '../../widgets/app_top_bar.dart';
 import '../notes_detail/notes_detail_screen.dart';
-import '../../core/network/api_exception.dart';
-import '../../models/comment.dart';
-import '../../services/interaction_service.dart';
 import '../notes_detail/reply_feed_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -22,6 +22,9 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final PostService _postService = PostService();
+  final InteractionService _interactionService = InteractionService();
+  final Set<int> _busyLikes = {};
+  final Set<int> _busyRestacks = {};
 
   late Future<List<Post>> _postsFuture;
 
@@ -52,10 +55,6 @@ class _HomeScreenState extends State<HomeScreen> {
     // Halaman detail menulis statusnya kembali ke objek post yang sama.
     if (mounted) setState(() {});
   }
-
-  final InteractionService _interactionService = InteractionService();
-  final Set<int> _busyLikes = {};
-  final Set<int> _busyRestacks = {};
 
   void _showMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(

@@ -10,6 +10,7 @@ class Comment extends Model
 {
     protected $fillable = [
         'post_id',
+        'episode_id',
         'user_id',
         'parent_comment_id',
         'content',
@@ -18,6 +19,11 @@ class Comment extends Model
     public function post(): BelongsTo
     {
         return $this->belongsTo(Post::class);
+    }
+
+    public function episode(): BelongsTo
+    {
+        return $this->belongsTo(Episode::class);
     }
 
     public function user(): BelongsTo
