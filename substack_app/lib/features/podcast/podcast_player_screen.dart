@@ -3,29 +3,6 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import 'podcast_player_controller.dart';
 
-const List<PodcastCommentData> _sampleComments = [
-  PodcastCommentData(
-    username: 'nanash',
-    dateText: 'SEP 14',
-    likedByAuthor: 'Disukai oleh Amelia Masayu',
-    content:
-        'Iseng-iseng dengerin dan baca ini karena gabut ehh malah relate banget sama keamanan chat yang kita pakai sehari-hari.',
-    likesCount: 93,
-    repliesSummary: '2 replies by Amelia Masayu and others',
-    avatarColor: Color(0xFF3B4252),
-  ),
-  PodcastCommentData(
-    username: 'claire',
-    dateText: 'SEP 15',
-    likedByAuthor: 'Disukai oleh Amelia Masayu',
-    content:
-        'Penjelasan perbandingan enkripsi Signal, WhatsApp, dan Telegram-nya sangat jelas dan mudah dipahami!',
-    likesCount: 41,
-    repliesSummary: '1 reply by Amelia Masayu',
-    avatarColor: Color(0xFF9B2C2C),
-  ),
-];
-
 class PodcastPlayerScreen extends StatefulWidget {
   const PodcastPlayerScreen({super.key});
 
@@ -1029,7 +1006,7 @@ class _PodcastPlayerScreenState extends State<PodcastPlayerScreen> {
                           Container(
                             key: _commentsKey,
                             child: Text(
-                              '${(episode.comments.isNotEmpty ? episode.comments : _sampleComments).length} komentar',
+                              '${episode.comments.length} komentar',
                               style: const TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w800,
@@ -1074,24 +1051,9 @@ class _PodcastPlayerScreenState extends State<PodcastPlayerScreen> {
                           const SizedBox(height: 20),
 
                           // Daftar komentar
-                          for (int i = 0;
-                              i <
-                                  (episode.comments.isNotEmpty
-                                          ? episode.comments
-                                          : _sampleComments)
-                                      .length;
-                              i++) ...[
-                            _PodcastCommentItem(
-                              comment: (episode.comments.isNotEmpty
-                                  ? episode.comments
-                                  : _sampleComments)[i],
-                            ),
-                            if (i <
-                                (episode.comments.isNotEmpty
-                                            ? episode.comments
-                                            : _sampleComments)
-                                        .length -
-                                    1)
+                          for (int i = 0; i < episode.comments.length; i++) ...[
+                            _PodcastCommentItem(comment: episode.comments[i]),
+                            if (i < episode.comments.length - 1)
                               const SizedBox(height: 20),
                           ],
                         ],
@@ -1156,7 +1118,7 @@ class _PodcastPlayerScreenState extends State<PodcastPlayerScreen> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          '${(episode.comments.isNotEmpty ? episode.comments : _sampleComments).length}',
+                          '${episode.comments.length}',
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,

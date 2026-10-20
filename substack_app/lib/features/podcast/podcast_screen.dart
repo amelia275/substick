@@ -64,97 +64,6 @@ class ExplorePodcastData {
   });
 }
 
-const String _hackerspotCoverUrl =
-    'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=600&q=80';
-
-const List<PodcastShowData> _defaultYourShows = [
-  PodcastShowData(
-    id: 'hackerspot',
-    shortTitle: 'Hackerspot',
-    title: 'Hackerspot Podcast',
-    author: 'Amelia Masayu',
-    description:
-        'A knowledge-sharing platform for those interested in cybersecurity.',
-    coverUrl: _hackerspotCoverUrl,
-    accentColor: Color(0xFF539022),
-    episodes: [
-      PodcastEpisodeItem(
-        id: 'ep-1',
-        showTitle: 'Hackerspot',
-        publicationName: 'HACKERSPOT',
-        authorName: 'Amelia Masayu',
-        timeAgo: '1TH YANG LALU',
-        publishedDateText: '1 Februari 2025 pukul 01.31',
-        title: 'A Security Analysis of Chat Applications',
-        subtitle:
-            'A security analysis comparison between Signal, WhatsApp and Telegram',
-        captionSnippet:
-            "And lucky for us, there's this super in-depth security analysis paper we can use as like our guide.",
-        articleBody:
-            'Choosing the right messaging app is more important than ever. With increasing concerns over how data is handled, many users turn to encrypted messaging platforms to protect their privacy.\n\nAmong the most popular are Signal, WhatsApp and Telegram. Each platform offers its own encryption model, metadata policy, and open-source transparency.',
-        coverUrl: _hackerspotCoverUrl,
-        thumbnailUrl:
-            'https://images.unsplash.com/photo-1611746872915-64382b5c76da?auto=format&fit=crop&w=400&q=80',
-        totalDurationSeconds: 13 * 60 + 18,
-        likesCount: 4,
-        restacksCount: 1,
-      ),
-      PodcastEpisodeItem(
-        id: 'ep-2',
-        showTitle: 'Hackerspot',
-        publicationName: 'HACKERSPOT',
-        authorName: 'Amelia Masayu',
-        timeAgo: '1TH YANG LALU',
-        publishedDateText: '18 Januari 2025 pukul 19.15',
-        title: "Meta's Content Moderation and the Future of Tech",
-        subtitle:
-            'How automated moderation systems and policy shifts shape online discourse.',
-        captionSnippet:
-            'When platforms scale to billions of users, automated moderation becomes both essential and controversial.',
-        articleBody:
-            'Content moderation at scale requires a delicate balance between safety, free expression, and algorithmic accuracy.\n\nIn this episode, we explore how modern tech platforms design their moderation pipelines and what changes lie ahead.',
-        coverUrl: _hackerspotCoverUrl,
-        thumbnailUrl:
-            'https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=400&q=80',
-        totalDurationSeconds: 21 * 60,
-        likesCount: 9,
-        restacksCount: 2,
-      ),
-    ],
-  ),
-];
-
-const List<ExplorePodcastData> _defaultExploreEpisodes = [
-  ExplorePodcastData(
-    isFeaturedVideo: true,
-    publicationLogoUrl:
-        'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=200&q=80',
-    episode: PodcastEpisodeItem(
-      id: 'ep-3',
-      showTitle: 'Quantum Mind',
-      publicationName: 'QUANTUM MIND',
-      authorName: 'Arwa',
-      timeAgo: '1BLN YANG LALU',
-      publishedDateText: '15 September 2026 pukul 09.00',
-      title:
-          'Kenapa Otak Anda "Sengaja" Membuang Ilmu yang Sudah Dipelajari',
-      subtitle:
-          'Beberapa waktu lalu saya menulis tentang kenapa Anda sering lupa apa yang baru dibaca...',
-      captionSnippet:
-          'Otak manusia dirancang untuk menyaring informasi, bukan menyimpan setiap detail tanpa konteks.',
-      articleBody:
-          'Beberapa waktu lalu saya menulis tentang kenapa Anda sering lupa apa yang baru saja dipelajari. Ternyata mekanisme lupa justru bagian penting dari cara kerja memori manusia.',
-      coverUrl:
-          'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=900&q=80',
-      thumbnailUrl:
-          'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=900&q=80',
-      totalDurationSeconds: 18 * 60,
-      likesCount: 24,
-      restacksCount: 5,
-    ),
-  ),
-];
-
 void _playAndOpenPlayer(BuildContext context, PodcastEpisodeItem episode) {
   PodcastPlayerController.instance.playEpisode(episode);
   Navigator.of(context).push(
@@ -183,8 +92,10 @@ class _PodcastScreenState extends State<PodcastScreen> {
   final ApiClient _apiClient = ApiClient();
   int _selectedFilterIndex = 0;
   bool _isMuted = true;
-  List<PodcastShowData> _yourShows = _defaultYourShows;
-  List<ExplorePodcastData> _exploreEpisodes = _defaultExploreEpisodes;
+  bool _isLoading = true;
+  bool _hasError = false;
+  List<PodcastShowData> _yourShows = const [];
+  List<ExplorePodcastData> _exploreEpisodes = const [];
 
   @override
   void initState() {
@@ -199,6 +110,11 @@ class _PodcastScreenState extends State<PodcastScreen> {
   }
 
   Future<void> _fetchPodcasts() async {
+    setState(() {
+      _isLoading = true;
+      _hasError = false;
+    });
+
     try {
       final response = await _apiClient.get('/podcasts');
       final List<dynamic> rawList = response is Map<String, dynamic>
@@ -210,7 +126,7 @@ class _PodcastScreenState extends State<PodcastScreen> {
           .map(Podcast.fromJson)
           .toList();
 
-      if (podcasts.isEmpty || !mounted) return;
+      if (!mounted) return;
 
       final subscribedShows = podcasts
           .where((p) => p.isSubscribed)
@@ -236,15 +152,16 @@ class _PodcastScreenState extends State<PodcastScreen> {
       }
 
       setState(() {
-        if (subscribedShows.isNotEmpty) {
-          _yourShows = subscribedShows;
-        }
-        if (exploreItems.isNotEmpty) {
-          _exploreEpisodes = exploreItems;
-        }
+        _yourShows = subscribedShows;
+        _exploreEpisodes = exploreItems;
+        _isLoading = false;
       });
     } catch (_) {
-      // Tetap gunakan data default jika server Laravel sedang mati/offline.
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
+      });
     }
   }
 
@@ -304,9 +221,33 @@ class _PodcastScreenState extends State<PodcastScreen> {
           ),
         ],
       ),
-      body: ListView(
-        padding: EdgeInsets.zero,
-        children: [
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
+          : _hasError
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'Gagal memuat data podcast dari server.',
+                        style: TextStyle(color: AppColors.textSecondary),
+                      ),
+                      const SizedBox(height: 12),
+                      FilledButton(
+                        onPressed: _fetchPodcasts,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                        ),
+                        child: const Text('Coba Lagi'),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView(
+                  padding: EdgeInsets.zero,
+                  children: [
           // Filter bar: Untuk Anda | Terbaru | Berbayar | Tersimpan | Riwayat
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
