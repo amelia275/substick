@@ -11,6 +11,7 @@ class ReadController extends Controller
     {
         $categories = Category::orderBy('sort_order')
             ->with(['posts' => fn ($q) => $q
+                ->with(['user', 'publication'])
                 ->where('type', 'article')
                 ->orderByDesc('published_at')
                 ->limit(10)])

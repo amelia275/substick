@@ -733,39 +733,19 @@ class _PodcastPlayerScreenState extends State<PodcastPlayerScreen> {
                             ),
                           ),
 
-                          // Paragraf 1 artikel
-                          RichText(
-                            text: const TextSpan(
-                              style: TextStyle(
-                                fontSize: 17.5,
-                                color: AppColors.textPrimary,
-                                height: 1.6,
-                                fontFamily: 'Georgia',
-                              ),
-                              children: [
-                                TextSpan(
-                                  text:
-                                      'Choosing the right messaging app is more important than ever. With increasing concerns over how data is handled, many users turn to secure messaging platforms to protect their communication. Among the most popular are ',
-                                ),
-                                TextSpan(
-                                  text: 'Signal, WhatsApp,',
-                                  style: TextStyle(fontWeight: FontWeight.w700),
-                                ),
-                                TextSpan(text: ' and '),
-                                TextSpan(
-                                  text: 'Telegram,',
-                                  style: TextStyle(fontWeight: FontWeight.w700),
-                                ),
-                                TextSpan(
-                                  text:
-                                      ' all of which offer some level of end-to-end encryption. However, the depth of their security features, encryption implementation, and overall privacy protections vary widely.',
-                                ),
-                              ],
+                          // Isi artikel dari episode.articleBody
+                          Text(
+                            episode.articleBody,
+                            style: const TextStyle(
+                              fontSize: 17.5,
+                              color: AppColors.textPrimary,
+                              height: 1.6,
+                              fontFamily: 'Georgia',
                             ),
                           ),
                           const SizedBox(height: 18),
 
-                          // Gambar ilustrasi di dalam artikel (sesuai Screenshot 1)
+                          // Gambar ilustrasi di dalam artikel
                           ClipRRect(
                             borderRadius: BorderRadius.circular(10),
                             child: Image.network(
@@ -788,46 +768,35 @@ class _PodcastPlayerScreenState extends State<PodcastPlayerScreen> {
                           ),
                           const SizedBox(height: 20),
 
-                          // Paragraf lanjutan
-                          Text(
-                            episode.articleBody,
-                            style: const TextStyle(
-                              fontSize: 17.5,
-                              color: AppColors.textPrimary,
-                              height: 1.6,
-                              fontFamily: 'Georgia',
-                            ),
-                          ),
-                          const SizedBox(height: 18),
-
-                          // Kutipan bergaris vertikal ungu di sebelah kiri (sesuai Screenshot 2)
-                          IntrinsicHeight(
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Container(
-                                  width: 3.5,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF7B2CBF),
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
-                                ),
-                                const SizedBox(width: 14),
-                                const Expanded(
-                                  child: Text(
-                                    'Mungkin keamanan terbaik bukan ketika aplikasi menjanjikan privasi sempurna, tetapi ketika arsitektur enkripsinya terbuka untuk diuji siapa saja.',
-                                    style: TextStyle(
-                                      fontSize: 17,
-                                      color: AppColors.textPrimary,
-                                      height: 1.55,
-                                      fontFamily: 'Georgia',
+                          if (episode.captionSnippet.isNotEmpty) ...[
+                            IntrinsicHeight(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Container(
+                                    width: 3.5,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF7B2CBF),
+                                      borderRadius: BorderRadius.circular(2),
                                     ),
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Text(
+                                      episode.captionSnippet,
+                                      style: const TextStyle(
+                                        fontSize: 17,
+                                        color: AppColors.textPrimary,
+                                        height: 1.55,
+                                        fontFamily: 'Georgia',
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 24),
+                            const SizedBox(height: 24),
+                          ],
 
                           // Kartu profil penulis + tombol Berlangganan & Bagikan Postingan (sesuai Screenshot 2)
                           Container(
