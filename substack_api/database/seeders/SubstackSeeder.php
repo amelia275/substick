@@ -4,7 +4,9 @@ namespace Database\Seeders;
 
 use App\Models\Bookmark;
 use App\Models\Comment;
+use App\Models\Episode;
 use App\Models\Notification;
+use App\Models\Podcast;
 use App\Models\Post;
 use App\Models\PostLike;
 use App\Models\PostRestack;
@@ -257,6 +259,129 @@ class SubstackSeeder extends Seeder
                 'is_read' => false,
                 'created_at' => now()->subDays(14),
             ]
+        );
+
+        // Contoh 2 Podcast & Episode untuk halaman Podcast
+        $hackerspotPodcast = Podcast::firstOrCreate(
+            [
+                'user_id' => $amelia->id,
+                'title' => 'Hackerspot Podcast',
+            ],
+            [
+                'publication_id' => $ameliaPublication->id,
+                'short_title' => 'Hackerspot',
+                'author_name' => $amelia->name,
+                'description' => 'A knowledge-sharing platform for those interested in cybersecurity.',
+                'cover_url' => 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=600&q=80',
+            ]
+        );
+
+        $epChatSecurity = Episode::firstOrCreate(
+            [
+                'podcast_id' => $hackerspotPodcast->id,
+                'title' => 'A Security Analysis of Chat Applications',
+            ],
+            [
+                'subtitle' => 'A security analysis comparison between Signal, WhatsApp and Telegram',
+                'caption_snippet' => "And lucky for us, there's this super in-depth security analysis paper we can use as like our guide.",
+                'description' => "Choosing the right messaging app is more important than ever. With increasing concerns over how data is handled, many users turn to encrypted messaging platforms to protect their privacy.\n\nAmong the most popular are Signal, WhatsApp and Telegram. Each platform offers its own encryption model, metadata policy, and open-source transparency.",
+                'thumbnail_url' => 'https://images.unsplash.com/photo-1611746872915-64382b5c76da?auto=format&fit=crop&w=400&q=80',
+                'duration_seconds' => 13 * 60 + 18,
+                'is_featured_video' => false,
+                'likes_count' => 4,
+                'comments_count' => 2,
+                'restacks_count' => 1,
+                'published_at' => now()->subYear(),
+            ]
+        );
+
+        $epMetaModeration = Episode::firstOrCreate(
+            [
+                'podcast_id' => $hackerspotPodcast->id,
+                'title' => "Meta's Content Moderation and the Future of Tech",
+            ],
+            [
+                'subtitle' => 'How automated moderation systems and policy shifts shape online discourse.',
+                'caption_snippet' => 'When platforms scale to billions of users, automated moderation becomes both essential and controversial.',
+                'description' => 'Content moderation at scale requires a delicate balance between safety, free expression, and algorithmic accuracy.',
+                'thumbnail_url' => 'https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=400&q=80',
+                'duration_seconds' => 21 * 60,
+                'is_featured_video' => false,
+                'likes_count' => 9,
+                'comments_count' => 1,
+                'restacks_count' => 2,
+                'published_at' => now()->subYear()->subDays(10),
+            ]
+        );
+
+        $quantumPodcast = Podcast::firstOrCreate(
+            [
+                'user_id' => $users['arwa']['user']->id,
+                'title' => 'Quantum Mind',
+            ],
+            [
+                'publication_id' => $users['arwa']['publication']->id,
+                'short_title' => 'Quantum Mind',
+                'author_name' => $users['arwa']['user']->name,
+                'description' => 'Membahas cara kerja pikiran, memori, dan pembelajaran manusia.',
+                'cover_url' => 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=900&q=80',
+            ]
+        );
+
+        $epQuantumMind = Episode::firstOrCreate(
+            [
+                'podcast_id' => $quantumPodcast->id,
+                'title' => 'Kenapa Otak Anda "Sengaja" Membuang Ilmu yang Sudah Dipelajari',
+            ],
+            [
+                'subtitle' => 'Beberapa waktu lalu saya menulis tentang kenapa Anda sering lupa apa yang baru dibaca...',
+                'caption_snippet' => 'Otak manusia dirancang untuk menyaring informasi, bukan menyimpan setiap detail tanpa konteks.',
+                'description' => 'Beberapa waktu lalu saya menulis tentang kenapa Anda sering lupa apa yang baru saja dipelajari. Ternyata mekanisme lupa justru bagian penting dari cara kerja memori manusia.',
+                'thumbnail_url' => 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=900&q=80',
+                'duration_seconds' => 18 * 60,
+                'is_featured_video' => true,
+                'likes_count' => 24,
+                'comments_count' => 2,
+                'restacks_count' => 5,
+                'published_at' => now()->subDays(30),
+            ]
+        );
+
+        // Komentar di episode podcast (masuk ke tabel comments, sesuai user di tabel users)
+        Comment::firstOrCreate(
+            [
+                'episode_id' => $epChatSecurity->id,
+                'user_id' => $users['nanash']['user']->id,
+                'content' => 'Iseng-iseng dengerin dan baca ini karena gabut ehh malah relate banget sama keamanan chat yang kita pakai sehari-hari.',
+            ],
+            ['post_id' => null, 'parent_comment_id' => null]
+        );
+
+        Comment::firstOrCreate(
+            [
+                'episode_id' => $epChatSecurity->id,
+                'user_id' => $users['claire']['user']->id,
+                'content' => 'Penjelasan perbandingan enkripsi Signal, WhatsApp, dan Telegram-nya sangat jelas dan mudah dipahami!',
+            ],
+            ['post_id' => null, 'parent_comment_id' => null]
+        );
+
+        Comment::firstOrCreate(
+            [
+                'episode_id' => $epMetaModeration->id,
+                'user_id' => $users['arwa']['user']->id,
+                'content' => 'Topik moderasi konten ini menarik banget buat dibahas lebih dalam.',
+            ],
+            ['post_id' => null, 'parent_comment_id' => null]
+        );
+
+        Comment::firstOrCreate(
+            [
+                'episode_id' => $epQuantumMind->id,
+                'user_id' => $amelia->id,
+                'content' => 'Pantesan sering lupa kalau belajar cuma hafalan tanpa konteks, penjelasannya mantap!',
+            ],
+            ['post_id' => null, 'parent_comment_id' => null]
         );
     }
 }

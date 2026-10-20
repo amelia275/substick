@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'mini_audio_player.dart';
 import 'substack_nav_icon.dart';
 import '../core/theme/app_colors.dart';
 
@@ -54,45 +55,51 @@ class AppBottomNavigation extends StatelessWidget {
       ),
       child: SafeArea(
         top: false,
-        child: SizedBox(
-          height: 56,
-          child: Row(
-            children: List.generate(items.length, (index) {
-              final item = items[index];
-              final isSelected = currentIndex == index;
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              height: 56,
+              child: Row(
+                children: List.generate(items.length, (index) {
+                  final item = items[index];
+                  final isSelected = currentIndex == index;
 
-              return Expanded(
-                child: InkWell(
-                  onTap: () => onTap(index),
-                  splashColor: Colors.transparent,
-                  highlightColor: Colors.transparent,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SubstackNavIcon(
-                        index: index,
-                        active: isSelected,
-                        size: 28,
+                  return Expanded(
+                    child: InkWell(
+                      onTap: () => onTap(index),
+                      splashColor: Colors.transparent,
+                      highlightColor: Colors.transparent,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SubstackNavIcon(
+                            index: index,
+                            active: isSelected,
+                            size: 28,
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            item.label,
+                            maxLines: 1,
+                            style: TextStyle(
+                              fontSize: 10,
+                              height: 1.2,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        item.label,
-                        maxLines: 1,
-                        style: TextStyle(
-                          fontSize: 10,
-                          height: 1.2,
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.w400,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ),
+                    ),
+                  );
+                }),
+              ),
+            ),
+            const MiniAudioPlayer(),
+          ],
         ),
       ),
     );
