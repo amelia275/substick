@@ -6,6 +6,15 @@ import '../../models/read_section.dart';
 import '../../services/read_service.dart';
 import '../../widgets/app_bottom_navigation.dart';
 import '../../widgets/app_top_bar.dart';
+import '../article_detail/article_detail_screen.dart';
+
+void _openArticleDetail(BuildContext context, Post article) {
+  Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (_) => ArticleDetailScreen(post: article),
+    ),
+  );
+}
 
 // ───────────────────────── Gaya tampilan section ─────────────────────────
 // Nama section datang dari API (field `category`). Di sini hanya menentukan
@@ -96,18 +105,18 @@ class _ReadScreenState extends State<ReadScreen> {
                       return _ForYouFeed(sections: snapshot.data ?? const []);
                     },
                   )
-                  : Builder(
-                      builder: (context) {
-                        final msg = _emptyMessages[_tabs[_tab]];
-                        return _EmptyTabState(
+                : Builder(
+                    builder: (context) {
+                      final msg = _emptyMessages[_tabs[_tab]];
+                      return _EmptyTabState(
                         title: msg?.$1 ?? 'Belum ada konten',
                         subtitle: msg?.$2 ?? '',
-                        );
-                      },
-                    ),
+                      );
+                    },
                   ),
-                ],
-        ),
+          ),
+        ],
+      ),
       bottomNavigationBar: AppBottomNavigation(
         currentIndex: 1,
         onTap: (index) {
@@ -264,7 +273,7 @@ class _ErrorState extends StatelessWidget {
   }
 }
 
-// ───────────────────────── Empty state tab ─────────────────────────   ← TARUH DI SINI
+// ───────────────────────── Empty state tab ─────────────────────────
 const _emptyMessages = <String, (String, String)>{
   'Terbaru': (
     'Anda sudah mengejar ketertinggalan!',
@@ -322,6 +331,7 @@ class _EmptyTabState extends StatelessWidget {
     );
   }
 }
+
 // ───────────────────────── Feed "Untuk Anda" ─────────────────────────
 class _ForYouFeed extends StatelessWidget {
   const _ForYouFeed({required this.sections});
@@ -520,56 +530,60 @@ class _HorizontalList extends StatelessWidget {
   Widget build(BuildContext context) {
     const cardWidth = 140.0;
     return SizedBox(
-      height: 270, // sebelumnya 232
+      height: 270,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
         itemCount: items.length,
         separatorBuilder: (_, __) => const SizedBox(width: 16),
-        itemBuilder: (_, i) {
+        itemBuilder: (context, i) {
           final a = items[i];
-          return SizedBox(
-            width: cardWidth,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _Thumb(
-                  color: _placeholderColor(a.id),
-                  imageUrl: a.imageUrl,
-                  size: cardWidth,
-                ),
-                const SizedBox(height: 10),
-                // tinggi dikunci 2 baris supaya semua kartu sejajar
-                SizedBox(
-                  height: 40,
-                  child: Text(
-                    _titleOf(a),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      height: 1.25,
+          return GestureDetector(
+            onTap: () => _openArticleDetail(context, a),
+            behavior: HitTestBehavior.opaque,
+            child: SizedBox(
+              width: cardWidth,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _Thumb(
+                    color: _placeholderColor(a.id),
+                    imageUrl: a.imageUrl,
+                    size: cardWidth,
+                  ),
+                  const SizedBox(height: 10),
+                  // tinggi dikunci 2 baris supaya semua kartu sejajar
+                  SizedBox(
+                    height: 40,
+                    child: Text(
+                      _titleOf(a),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        height: 1.25,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _authorLabel(a),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 13,
+                  const SizedBox(height: 4),
+                  Text(
+                    _authorLabel(a),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                _Stats(
-                  likes: _compact(a.likesCount),
-                  comments: _compact(a.commentsCount),
-                ),
-              ],
+                  const SizedBox(height: 4),
+                  _Stats(
+                    likes: _compact(a.likesCount),
+                    comments: _compact(a.commentsCount),
+                  ),
+                ],
+              ),
             ),
           );
         },
@@ -590,7 +604,7 @@ class _ArticleTile extends StatelessWidget {
     final excerpt = _hasTitle(a) ? _excerpt(a) : ''; // kalau tanpa judul, kutipan sudah jadi judul
 
     return InkWell(
-      onTap: () {},
+      onTap: () => _openArticleDetail(context, a),
       child: Stack(
         children: [
           Padding(
@@ -699,119 +713,122 @@ class _FeaturedCard extends StatelessWidget {
     const white = Colors.white;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: SizedBox(
-          height: 245,
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: a.imageUrl == null
-                    ? DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [color, const Color(0xFF1B2A1B)],
+      child: GestureDetector(
+        onTap: () => _openArticleDetail(context, a),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: SizedBox(
+            height: 245,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: a.imageUrl == null
+                      ? DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [color, const Color(0xFF1B2A1B)],
+                            ),
+                          ),
+                        )
+                      : Image.network(
+                          a.imageUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(color: color),
+                        ),
+                ),
+                // overlay gelap supaya teks putih terbaca
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withAlpha(40),
+                          Colors.black.withAlpha(150),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned.fill(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const _Thumb(color: Colors.white38, size: 26, radius: 6),
+                            const SizedBox(width: 8),
+                            Text(_authorLabel(a),
+                                style: const TextStyle(
+                                    color: white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700)),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          _titleOf(a),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: white,
+                            fontFamily: 'serif', // sama seperti kartu quote di HomeScreen
+                            fontSize: 25,
+                            fontWeight: FontWeight.w600,
+                            height: 1.2,
                           ),
                         ),
-                      )
-                    : Image.network(
-                        a.imageUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(color: color),
-                      ),
-              ),
-              // overlay gelap supaya teks putih terbaca
-              Positioned.fill(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.black.withAlpha(40),
-                        Colors.black.withAlpha(150),
+                        const SizedBox(height: 8),
+                        Text(
+                          _hasTitle(a) ? _excerpt(a) : '',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: white, fontSize: 14, height: 1.3),
+                        ),
+                        const Spacer(),
+                        Row(
+                          children: [
+                            Text(_formatDate(a.publishedAt),
+                                style: const TextStyle(color: white, fontSize: 14)),
+                            const SizedBox(width: 8),
+                            const Text('·', style: TextStyle(color: white)),
+                            const SizedBox(width: 8),
+                            const Icon(Icons.favorite_border, size: 16, color: white),
+                            const SizedBox(width: 4),
+                            Text(_compact(a.likesCount),
+                                style: const TextStyle(color: white, fontSize: 14)),
+                            const SizedBox(width: 12),
+                            const Icon(Icons.chat_bubble_outline, size: 16, color: white),
+                            const SizedBox(width: 4),
+                            Text(_compact(a.commentsCount),
+                                style: const TextStyle(color: white, fontSize: 14)),
+                            const Spacer(),
+                            Material(
+                              color: Colors.black,
+                              borderRadius: BorderRadius.circular(10),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(10),
+                                onTap: () {},
+                                child: const SizedBox(
+                                  width: 40,
+                                  height: 40,
+                                  child: Icon(Icons.bookmark_border, color: white),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
                 ),
-              ),
-              Positioned.fill(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const _Thumb(color: Colors.white38, size: 26, radius: 6),
-                          const SizedBox(width: 8),
-                          Text(_authorLabel(a),
-                              style: const TextStyle(
-                                  color: white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700)),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        _titleOf(a),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: white,
-                          fontFamily: 'serif', // sama seperti kartu quote di HomeScreen
-                          fontSize: 25,
-                          fontWeight: FontWeight.w600,
-                          height: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _hasTitle(a) ? _excerpt(a) : '',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: white, fontSize: 14, height: 1.3),
-                      ),
-                      const Spacer(),
-                      Row(
-                        children: [
-                          Text(_formatDate(a.publishedAt),
-                              style: const TextStyle(color: white, fontSize: 14)),
-                          const SizedBox(width: 8),
-                          const Text('·', style: TextStyle(color: white)),
-                          const SizedBox(width: 8),
-                          const Icon(Icons.favorite_border, size: 16, color: white),
-                          const SizedBox(width: 4),
-                          Text(_compact(a.likesCount),
-                              style: const TextStyle(color: white, fontSize: 14)),
-                          const SizedBox(width: 12),
-                          const Icon(Icons.chat_bubble_outline, size: 16, color: white),
-                          const SizedBox(width: 4),
-                          Text(_compact(a.commentsCount),
-                              style: const TextStyle(color: white, fontSize: 14)),
-                          const Spacer(),
-                          Material(
-                            color: Colors.black,
-                            borderRadius: BorderRadius.circular(10),
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(10),
-                              onTap: () {},
-                              child: const SizedBox(
-                                width: 40,
-                                height: 40,
-                                child: Icon(Icons.bookmark_border, color: white),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
