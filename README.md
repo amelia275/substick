@@ -2,6 +2,13 @@
 
 Proyek clone aplikasi Substack menggunakan **Flutter (Dart)** untuk frontend, **Laravel 13** untuk backend API, dan **MySQL** sebagai database.
 
+# Anggota Kelompok
+1. (127) RAMADAN CHANDRA WIJAYA
+2. (133) AMELIA MASAYU
+3. (121) ZAHWA MAULIDATUL AMANA HIDAYANTO
+4. (124) MUHADZDZIB LUTHFI HADID
+5. (109) HABBIB AHMAD
+
 ## Teknologi yang Digunakan
 
 - Flutter & Dart
