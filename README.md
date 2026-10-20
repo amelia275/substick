@@ -1,4 +1,4 @@
-# Substack Clone
+# Substick
 
 Proyek clone aplikasi Substack menggunakan **Flutter (Dart)** untuk frontend, **Laravel 13** untuk backend API, dan **MySQL** sebagai database.
 
